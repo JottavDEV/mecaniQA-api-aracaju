@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class Servico {
 
+    // ===================== ATRIBUTOS =====================
     private long codigoServico;
     private String nomeServico;
     private String descricaoServico;
@@ -12,60 +13,62 @@ public class Servico {
     private LocalDateTime dataCriacao;
     private LocalDateTime dataAtualizacao;
 
-
+    // ===================== CONSTRUTOR =====================
     public Servico() {
     }
 
+    // ===================== GETTERS =====================
     public long getCodigoServico() {
         return codigoServico;
-    }
-
-    public void setCodigoServico(long novoCodigoServico) {
-        codigoServico = novoCodigoServico;
     }
 
     public String getNomeServico() {
         return nomeServico;
     }
 
-    public void setNomeServico(String novoNomeServico) {
-        nomeServico = novoNomeServico;
-    }
-
     public String getDescricaoServico() {
         return descricaoServico;
-    }
-
-    public void setDescricaoServico(String novoDescricao) {
-        descricaoServico = novoDescricao;
     }
 
     public int getTempoEstimadoMinutos() {
         return tempoEstimadoMinutos;
     }
 
-    public void setTempoEstimadoMinutos(int novoTempoEstimadoMinutos) {
-        tempoEstimadoMinutos = novoTempoEstimadoMinutos;
-    }
-
     public double getCustoTabelado() {
         return custoTabelado;
-    }
-
-    public void setCustoTabelado(double custoTabelado) {
-        custoTabelado = custoTabelado;
     }
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
 
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
-
     public LocalDateTime getDataAtualizacao() {
         return dataAtualizacao;
+    }
+
+    // ===================== SETTERS =====================
+    public void setCodigoServico(long novoCodigoServico) {
+        codigoServico = novoCodigoServico;
+    }
+
+    public void setNomeServico(String novoNomeServico) {
+        nomeServico = novoNomeServico;
+    }
+
+    public void setDescricaoServico(String novoDescricao) {
+        descricaoServico = novoDescricao;
+    }
+
+    public void setTempoEstimadoMinutos(int novoTempoEstimadoMinutos) {
+        tempoEstimadoMinutos = novoTempoEstimadoMinutos;
+    }
+
+    public void setCustoTabelado(double custoTabelado) {
+        this.custoTabelado = custoTabelado;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 
     public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
