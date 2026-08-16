@@ -40,12 +40,13 @@ public class PecaRepository {
     // TODAS
 
     public List<Peca> listarTodas() {
+
         return pecas;
     }
 
     // Listar por ID
 
-    public List<Peca> buscarPorId(long codigoSKU) {
+    public Peca buscarPorId(long codigoSKU) {
         for (Peca peca : pecas) {
             if (peca.getCodigoSKU() == codigoSKU) {
                 return peca;
@@ -86,3 +87,4 @@ public class PecaRepository {
         return true;
     }
 }
+
