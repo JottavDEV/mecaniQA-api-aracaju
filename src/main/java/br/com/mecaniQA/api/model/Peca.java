@@ -6,9 +6,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="pecas")
+@Table(name = "pecas")
 public class Peca {
 
+    // ===================== ATRIBUTOS =====================
     private long codigoSKU;
     private String nome;
     private long codigobarras;
@@ -25,97 +26,106 @@ public class Peca {
     @Column(nullable = false)
     private Categorias categoriaPeca;
 
-
+    // ===================== CONSTRUTOR =====================
     public Peca() {
     }
 
+    // ===================== GETTERS =====================
     public long getCodigoSKU() {
         return codigoSKU;
-    }
-
-    public void setCodigoSKU(long novoCodigo) {
-        codigoSKU = novoCodigo;
     }
 
     public String getNome() {
         return nome;
     }
 
-    public void setNome(String novoNome) {
-         nome = novoNome;
-    }
-
     public long getCodigobarras() {
         return codigobarras;
-    }
-
-    public void setCodigobarras(long novoCodigobarras) {
-        codigobarras = novoCodigobarras;
     }
 
     public String getFornecedor() {
         return fornecedor;
     }
 
-    public void setFornecedor(String novoFornecedor) {
-        fornecedor = novoFornecedor;
-    }
-
     public int getQuantidade() {
         return quantidade;
-    }
-
-    public void setQuantidade(int novoQuantidade) {
-        quantidade = novoQuantidade;
     }
 
     public double getPrecoCusto() {
         return precoCusto;
     }
 
-    public void setPrecoCusto(double novoPrecoCusto) {
-        precoCusto = novoPrecoCusto;
-    }
-
     public double getPrecoVenda() {
         return precoVenda;
-    }
-
-    public void setPrecoVenda(double novoPrecoVenda) {
-        precoVenda = novoPrecoVenda;
     }
 
     public LocalDateTime getDataCadastro() {
         return dataCadastro;
     }
 
-    public void setDataCadastro(LocalDateTime novaDataCadastro) {
-        dataCadastro = novaDataCadastro;
-
-    }
-
     public LocalDateTime getDataAtualizacao() {
         return dataAtualizacao;
-    }
-
-    public void setDataAtualizacao(LocalDateTime novaDataAtualizacao) {
-        dataAtualizacao = novaDataAtualizacao;
     }
 
     public String getTamanho() {
         return tamanho;
     }
 
-    public void setTamanho(String novoTamanho) {
-        tamanho = novoTamanho;
-    }
-
     public String getCor() {
         return cor;
+    }
+
+    public Categorias getCategoriaPeca() {
+        return categoriaPeca;
+    }
+
+    // ===================== SETTERS =====================
+    public void setCodigoSKU(long novoCodigo) {
+        codigoSKU = novoCodigo;
+    }
+
+    public void setNome(String novoNome) {
+        nome = novoNome;
+    }
+
+    public void setCodigobarras(long novoCodigobarras) {
+        codigobarras = novoCodigobarras;
+    }
+
+    public void setFornecedor(String novoFornecedor) {
+        fornecedor = novoFornecedor;
+    }
+
+    public void setQuantidade(int novoQuantidade) {
+        quantidade = novoQuantidade;
+    }
+
+    public void setPrecoCusto(double novoPrecoCusto) {
+        precoCusto = novoPrecoCusto;
+    }
+
+    public void setPrecoVenda(double novoPrecoVenda) {
+        precoVenda = novoPrecoVenda;
+    }
+
+    public void setDataCadastro(LocalDateTime novaDataCadastro) {
+        dataCadastro = novaDataCadastro;
+    }
+
+    public void setDataAtualizacao(LocalDateTime novaDataAtualizacao) {
+        dataAtualizacao = novaDataAtualizacao;
+    }
+
+    public void setTamanho(String novoTamanho) {
+        tamanho = novoTamanho;
     }
 
     public void setCor(String novaCor) {
         cor = novaCor;
     }
-}
 
+    public void setCategoriaPeca(Categorias novaCategoriaPeca) {
+        categoriaPeca = novaCategoriaPeca;
+    }
+
+}
