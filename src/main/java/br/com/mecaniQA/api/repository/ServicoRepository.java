@@ -45,7 +45,7 @@ public class ServicoRepository {
 
     // Listar por ID
 
-    public List<Servico> buscarPorID(long codigoServico) {
+    public Servico buscarPorID(long codigoServico) {
         for (Servico servico : servicos) {
             if (servico.getCodigoServico() == codigoServico) {
                 return servico;
@@ -66,6 +66,7 @@ public class ServicoRepository {
         servico.setDataAtualizacao(servicoAtualizado.getDataAtualizacao());
         servico.setDescricaoServico(servicoAtualizado.getDescricaoServico());
         servico.setTempoEstimadoMinutos(servicoAtualizado.getTempoEstimadoMinutos());
+        return servico;
     }
 
     // CRUD - DELETE
