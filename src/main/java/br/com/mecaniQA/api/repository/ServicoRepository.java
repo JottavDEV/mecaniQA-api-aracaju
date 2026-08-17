@@ -5,6 +5,7 @@ import br.com.mecaniQA.api.model.Servico;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ServicoRepository {
 
@@ -13,6 +14,7 @@ public class ServicoRepository {
 
     // ===================== ATRIBUTOS =====================
     private List<Servico> servicos;
+    private final AtomicLong contadorId = new AtomicLong(0);
 
     // ===================== CONSTRUTOR PRIVADO =====================
     private ServicoRepository() {
@@ -32,6 +34,7 @@ public class ServicoRepository {
     // CRUD - CREATE
 
     public Servico salvar(Servico servico) {
+        servico.setCodigoServico(contadorId.incrementAndGet());
         servicos.add(servico);
         return servico;
     }

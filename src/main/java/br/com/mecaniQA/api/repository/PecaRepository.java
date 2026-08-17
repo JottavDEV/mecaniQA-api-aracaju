@@ -4,6 +4,7 @@ import br.com.mecaniQA.api.model.Peca;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PecaRepository {
 
@@ -12,6 +13,7 @@ public class PecaRepository {
 
     // ===================== ATRIBUTOS =====================
     private List<Peca> pecas;
+    private final AtomicLong contadorId = new AtomicLong(0);
 
     // ===================== CONSTRUTOR PRIVADO =====================
     private PecaRepository() {
@@ -31,6 +33,7 @@ public class PecaRepository {
     // CRUD - CREATE
 
     public Peca salvar(Peca peca) {
+        peca.setCodigoSKU(contadorId.incrementAndGet());
         pecas.add(peca);
         return peca;
     }

@@ -1,8 +1,12 @@
 package br.com.mecaniQA.api.controller;
 
+import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
 import br.com.mecaniQA.api.model.Servico;
 import br.com.mecaniQA.api.repository.ServicoRepository;
+import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,47 +28,55 @@ public class ServicoController {
     // ===================== CREATE =====================
 
     @PostMapping
-    public Servico criar(@RequestBody Servico servico) {
-
-        return repository.salvar(servico);
+    public ResponseEntity<Servico> criar(@Valid @RequestBody Servico servico) {
+        Servico servicoSalvo = repository.salvar(servico);
+        return ResponseEntity.status(HttpStatus.CREATED).body(servicoSalvo);
     }
 
     // ===================== READ - TODOS =====================
 
     @GetMapping
     public List<Servico> listarTodos() {
-
         return repository.getServicos();
     }
 
     // ===================== READ - POR ID =====================
 
     @GetMapping("/{codigoServico}")
-    public Servico buscarPorId(
+    public ResponseEntity<Servico> buscarPorId(
             @PathVariable long codigoServico) {
 
-        return repository.buscarPorID(codigoServico);
+        Servico servico = repository.buscarPorID(codigoServico);
+        if (servico == null) {
+            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+        }
+        return ResponseEntity.ok(servico);
     }
 
     // ===================== UPDATE =====================
 
     @PutMapping("/{codigoServico}")
-    public Servico atualizar(
+    public ResponseEntity<Servico> atualizar(
             @PathVariable long codigoServico,
-            @RequestBody Servico servico) {
+            @Valid @RequestBody Servico servico) {
 
-        return repository.atualizar(
-                codigoServico,
-                servico
-        );
+        Servico servicoAtualizado = repository.atualizar(codigoServico, servico);
+        if (servicoAtualizado == null) {
+            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+        }
+        return ResponseEntity.ok(servicoAtualizado);
     }
 
     // ===================== DELETE =====================
 
     @DeleteMapping("/{codigoServico}")
-    public boolean deletar(
+    public ResponseEntity<Void> deletar(
             @PathVariable long codigoServico) {
 
-        return repository.deletar(codigoServico);
+        boolean removido = repository.deletar(codigoServico);
+        if (!removido) {
+            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+        }
+        return ResponseEntity.noContent().build();
     }
 }

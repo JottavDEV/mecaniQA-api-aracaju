@@ -2,6 +2,10 @@ package br.com.mecaniQA.api.model;
 
 import br.com.mecaniQA.api.enums.Categorias;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.time.LocalDateTime;
 
@@ -11,17 +15,31 @@ public class Peca {
 
     // ===================== ATRIBUTOS =====================
     private long codigoSKU;
+
+    @NotBlank(message = "O nome da peça é obrigatório")
     private String nome;
+
+    @Positive(message = "O código de barras deve ser um número positivo")
     private long codigobarras;
+
+    @NotBlank(message = "O fornecedor é obrigatório")
     private String fornecedor;
+
+    @PositiveOrZero(message = "A quantidade não pode ser negativa")
     private int quantidade;
+
+    @PositiveOrZero(message = "O preço de custo não pode ser negativo")
     private double precoCusto;
+
+    @PositiveOrZero(message = "O preço de venda não pode ser negativo")
     private double precoVenda;
+
     private LocalDateTime dataCadastro;
     private LocalDateTime dataAtualizacao;
     private String tamanho;
     private String cor;
 
+    @NotNull(message = "A categoria da peça é obrigatória")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Categorias categoriaPeca;

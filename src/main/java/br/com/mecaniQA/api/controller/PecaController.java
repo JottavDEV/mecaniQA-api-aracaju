@@ -1,7 +1,11 @@
 package br.com.mecaniQA.api.controller;
 
+import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
 import br.com.mecaniQA.api.model.Peca;
 import br.com.mecaniQA.api.repository.PecaRepository;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,8 +17,9 @@ public class PecaController {
     private final PecaRepository repository = PecaRepository.getInstance();
 
     @PostMapping
-    public Peca salvar(@RequestBody Peca peca) {
-        return repository.salvar(peca);
+    public ResponseEntity<Peca> salvar(@Valid @RequestBody Peca peca) {
+        Peca pecaSalva = repository.salvar(peca);
+        return ResponseEntity.status(HttpStatus.CREATED).body(pecaSalva);
     }
 
     @GetMapping
@@ -23,20 +28,32 @@ public class PecaController {
     }
 
     @GetMapping("/{codigoSKU}")
-    public Peca buscarPorId(@PathVariable long codigoSKU) {
-        return repository.buscarPorId(codigoSKU);
+    public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
+        Peca peca = repository.buscarPorId(codigoSKU);
+        if (peca == null) {
+            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+        }
+        return ResponseEntity.ok(peca);
     }
 
     @PutMapping("/{codigoSKU}")
-    public Peca atualizar(
+    public ResponseEntity<Peca> atualizar(
             @PathVariable long codigoSKU,
-            @RequestBody Peca peca) {
+            @Valid @RequestBody Peca peca) {
 
-        return repository.atualizar(codigoSKU, peca);
+        Peca pecaAtualizada = repository.atualizar(codigoSKU, peca);
+        if (pecaAtualizada == null) {
+            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+        }
+        return ResponseEntity.ok(pecaAtualizada);
     }
 
     @DeleteMapping("/{codigoSKU}")
-    public boolean deletar(@PathVariable long codigoSKU) {
-        return repository.deletar(codigoSKU);
+    public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
+        boolean removida = repository.deletar(codigoSKU);
+        if (!removida) {
+            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+        }
+        return ResponseEntity.noContent().build();
     }
 }
