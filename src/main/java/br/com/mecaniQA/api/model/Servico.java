@@ -1,15 +1,28 @@
 package br.com.mecaniQA.api.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+
 import java.time.LocalDateTime;
 
 public class Servico {
 
     // ===================== ATRIBUTOS =====================
     private long codigoServico;
+
+    @NotBlank(message = "O nome do serviço é obrigatório")
     private String nomeServico;
+
+    @NotBlank(message = "A descrição do serviço é obrigatória")
     private String descricaoServico;
+
+    @Positive(message = "O tempo estimado deve ser maior que zero")
     private int tempoEstimadoMinutos;
+
+    @PositiveOrZero(message = "O custo tabelado não pode ser negativo")
     private double custoTabelado;
+
     private LocalDateTime dataCriacao;
     private LocalDateTime dataAtualizacao;
 
