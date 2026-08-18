@@ -14,11 +14,12 @@ import java.util.List;
 // ===================== CREATE =====================
 
 @RestController
-@RequestMapping("/api/criarPeca")
+@RequestMapping("/api/pecas")
 public class PecaController {
 
     private final PecaRepository repository = PecaRepository.getInstance();
 
+    // ==================== CREATE ====================
     @PostMapping
     public ResponseEntity<Peca> salvar(@Valid @RequestBody Peca peca) {
         Peca pecaSalva = repository.salvar(peca);
@@ -27,14 +28,14 @@ public class PecaController {
 
     // ===================== READ =====================
 
-    @GetMapping("/api/listarPecas")
+    @GetMapping
     public List<Peca> listarTodas() {
         return repository.listarTodas();
     }
 
     // ===================== READ por ID =====================
 
-    @GetMapping("/api/{codigoSKU}")
+    @GetMapping("/{codigoSKU}")
     public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
         Peca peca = repository.buscarPorId(codigoSKU);
         if (peca == null) {
@@ -45,7 +46,7 @@ public class PecaController {
 
     // ===================== UPDATE =====================
 
-    @PutMapping("/api/{codigoSKU}")
+    @PutMapping("/{codigoSKU}")
     public ResponseEntity<Peca> atualizar(
             @PathVariable long codigoSKU,
             @Valid @RequestBody Peca peca) {
@@ -59,7 +60,7 @@ public class PecaController {
 
     // ===================== DELETE =====================
 
-    @DeleteMapping("/api/{codigoSKU}")
+    @DeleteMapping("/{codigoSKU}")
     public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
         boolean removida = repository.deletar(codigoSKU);
         if (!removida) {
