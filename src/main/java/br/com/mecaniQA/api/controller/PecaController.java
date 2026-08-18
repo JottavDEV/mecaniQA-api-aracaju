@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// ==================== Rotas CRUD ==================
+// ===================== CREATE =====================
+
 @RestController
-@RequestMapping("/pecas")
+@RequestMapping("/api/criarPeca")
 public class PecaController {
 
     private final PecaRepository repository = PecaRepository.getInstance();
@@ -22,12 +25,16 @@ public class PecaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pecaSalva);
     }
 
-    @GetMapping
+    // ===================== READ =====================
+
+    @GetMapping("/api/listarPecas")
     public List<Peca> listarTodas() {
         return repository.listarTodas();
     }
 
-    @GetMapping("/{codigoSKU}")
+    // ===================== READ por ID =====================
+
+    @GetMapping("/api/{codigoSKU}")
     public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
         Peca peca = repository.buscarPorId(codigoSKU);
         if (peca == null) {
@@ -36,7 +43,9 @@ public class PecaController {
         return ResponseEntity.ok(peca);
     }
 
-    @PutMapping("/{codigoSKU}")
+    // ===================== UPDATE =====================
+
+    @PutMapping("/api/{codigoSKU}")
     public ResponseEntity<Peca> atualizar(
             @PathVariable long codigoSKU,
             @Valid @RequestBody Peca peca) {
@@ -48,7 +57,9 @@ public class PecaController {
         return ResponseEntity.ok(pecaAtualizada);
     }
 
-    @DeleteMapping("/{codigoSKU}")
+    // ===================== DELETE =====================
+
+    @DeleteMapping("/api/{codigoSKU}")
     public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
         boolean removida = repository.deletar(codigoSKU);
         if (!removida) {

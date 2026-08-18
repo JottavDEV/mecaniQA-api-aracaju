@@ -11,19 +11,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+    // ==================== Rotas CRUD ==================
+    // ===================== READ =====================
 @RestController
 @RequestMapping("/servicos")
 public class ServicoController {
 
-    // ===================== REPOSITORY =====================
-
     private final ServicoRepository repository;
-
-    // ===================== CONSTRUTOR =====================
 
     public ServicoController() {
         this.repository = ServicoRepository.getInstance();
     }
+
 
     // ===================== CREATE =====================
 
@@ -35,14 +34,14 @@ public class ServicoController {
 
     // ===================== READ - TODOS =====================
 
-    @GetMapping
+    @GetMapping("/api/listarServicos")
     public List<Servico> listarTodos() {
         return repository.getServicos();
     }
 
     // ===================== READ - POR ID =====================
 
-    @GetMapping("/{codigoServico}")
+    @GetMapping("/api/{codigoServico}")
     public ResponseEntity<Servico> buscarPorId(
             @PathVariable long codigoServico) {
 
@@ -55,7 +54,7 @@ public class ServicoController {
 
     // ===================== UPDATE =====================
 
-    @PutMapping("/{codigoServico}")
+    @PutMapping("/api/{codigoServico}")
     public ResponseEntity<Servico> atualizar(
             @PathVariable long codigoServico,
             @Valid @RequestBody Servico servico) {
@@ -69,7 +68,7 @@ public class ServicoController {
 
     // ===================== DELETE =====================
 
-    @DeleteMapping("/{codigoServico}")
+    @DeleteMapping("/api/{codigoServico}")
     public ResponseEntity<Void> deletar(
             @PathVariable long codigoServico) {
 
