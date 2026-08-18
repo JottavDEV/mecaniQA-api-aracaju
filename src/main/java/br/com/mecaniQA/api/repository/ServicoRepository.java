@@ -1,6 +1,7 @@
 package br.com.mecaniQA.api.repository;
 
 import br.com.mecaniQA.api.model.Peca;
+import java.time.LocalDateTime;
 import br.com.mecaniQA.api.model.Servico;
 
 import java.util.ArrayList;
@@ -35,6 +36,8 @@ public class ServicoRepository {
 
     public Servico salvar(Servico servico) {
         servico.setCodigoServico(contadorId.incrementAndGet());
+        servico.setDataCriacao(LocalDateTime.now());
+        servico.setDataAtualizacao(LocalDateTime.now());
         servicos.add(servico);
         return servico;
     }
@@ -66,7 +69,7 @@ public class ServicoRepository {
         }
         servico.setNomeServico(servicoAtualizado.getNomeServico());
         servico.setCustoTabelado(servicoAtualizado.getCustoTabelado());
-        servico.setDataAtualizacao(servicoAtualizado.getDataAtualizacao());
+        servico.setDataAtualizacao(LocalDateTime.now());
         servico.setDescricaoServico(servicoAtualizado.getDescricaoServico());
         servico.setTempoEstimadoMinutos(servicoAtualizado.getTempoEstimadoMinutos());
         return servico;

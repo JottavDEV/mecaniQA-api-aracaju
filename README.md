@@ -4,10 +4,19 @@ Repositório da API da empresa fictícia **mecaniQA**, desenvolvido para a disci
 
 A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar o cadastro de **Peças** (estoque) e **Serviços** (mão de obra oferecida), servindo como base de estudo para conceitos de Spring Boot, REST e Orientação a Objetos.
 
+## Equipe
+
+- João Victor Carvalho de Oliveira
+- Kaio Santos de Oliveira
+- Marco Antonio Almeida Silva
+- Nivton Amaral Alves
+- Robert de Araújo Costa
+
 ---
 
 ## Sumário
 
+- [Equipe](#equipe)
 - [Stack utilizada](#stack-utilizada)
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Como o sistema funciona](#como-o-sistema-funciona)
@@ -17,10 +26,10 @@ A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar
 - [Modelos de dados (Entidades)](#modelos-de-dados-entidades)
   - [Peca](#peca)
   - [Servico](#servico)
-  - [Enum Categorias](#enum-categorias)
+  - [Enum CategoriaPeca](#enum-categoriapeca)
 - [Rotas da API (Endpoints)](#rotas-da-api-endpoints)
-  - [`/pecas`](#pecas)
-  - [`/servicos`](#servicos)
+  - [`/api/pecas`](#apipecas)
+  - [`/api/servicos`](#apiservicos)
 - [Detalhamento do código por classe](#detalhamento-do-código-por-classe)
 - [Como executar o projeto](#como-executar-o-projeto)
 - [Como testar as rotas](#como-testar-as-rotas)
@@ -52,10 +61,10 @@ src
 │   │   ├── ApiApplication.java          # Classe principal (bootstrap do Spring Boot)
 │   │   ├── MeuPrimeiroApp.java          # Classe avulsa de exercício/demonstração (não faz parte da API)
 │   │   ├── controller
-│   │   │   ├── PecaController.java      # Endpoints REST de /pecas
-│   │   │   └── ServicoController.java   # Endpoints REST de /servicos
+│   │   │   ├── PecaController.java      # Endpoints REST de /api/pecas
+│   │   │   └── ServicoController.java   # Endpoints REST de /api/servicos
 │   │   ├── enums
-│   │   │   └── Categorias.java          # Categorias possíveis de uma Peça
+│   │   │   └── CategoriaPeca.java       # Categorias possíveis de uma Peça
 │   │   ├── exception
 │   │   │   ├── RecursoNaoEncontradoException.java  # Exceção lançada quando um código não existe
 │   │   │   └── GlobalExceptionHandler.java         # Tratamento global de erros (404 e 400)
@@ -63,8 +72,8 @@ src
 │   │   │   ├── Peca.java                # Entidade Peça (com validação Bean Validation)
 │   │   │   └── Servico.java             # Modelo Serviço (com validação Bean Validation)
 │   │   └── repository
-│   │       ├── PecaRepository.java      # Armazenamento em memória das Peças (Singleton) + geração de código
-│   │       └── ServicoRepository.java   # Armazenamento em memória dos Serviços (Singleton) + geração de código
+│   │       ├── PecaRepository.java      # Armazenamento em memória das Peças (Singleton) + geração de código/datas
+│   │       └── ServicoRepository.java   # Armazenamento em memória dos Serviços (Singleton) + geração de código/datas
 │   └── resources
 │       └── application.properties       # Configurações da aplicação
 └── test
@@ -91,7 +100,7 @@ Controller (@RestController)
       │  chama diretamente
       ▼
 Repository (Singleton, lista em memória)
-      │  gera o código (SKU/Serviço) automaticamente, quando é uma criação
+      │  gera o código e as datas (cadastro/criação e atualização) automaticamente
       ▼
 Resposta em JSON (ResponseEntity com status HTTP correto: 200/201/204)
 ```
@@ -142,11 +151,11 @@ Representa uma peça do estoque da oficina. Está anotada com `@Entity` e `@Tabl
 | `quantidade` | `int` | `@PositiveOrZero` | Quantidade em estoque. Não pode ser negativa. |
 | `precoCusto` | `double` | `@PositiveOrZero` | Preço de custo (compra). Não pode ser negativo. |
 | `precoVenda` | `double` | `@PositiveOrZero` | Preço de venda. Não pode ser negativo. |
-| `dataCadastro` | `LocalDateTime` | — | Data/hora de cadastro da peça. |
-| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. |
+| `dataCadastro` | `LocalDateTime` | — | Data/hora de cadastro da peça. **Gerada automaticamente** (`LocalDateTime.now()`) no `salvar()`; valor enviado pelo cliente é ignorado. |
+| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. **Gerada automaticamente** no `salvar()` e a cada `atualizar()`; valor enviado pelo cliente é ignorado. |
 | `tamanho` | `String` | — | Tamanho da peça. |
 | `cor` | `String` | — | Cor da peça. |
-| `categoriaPeca` | `Categorias` (enum) | `@NotNull` | Categoria da peça. Obrigatória; persistida/serializada como texto (`EnumType.STRING`). |
+| `categoriaPeca` | `CategoriaPeca` (enum) | `@NotNull` | Categoria da peça. Obrigatória; persistida/serializada como texto (`EnumType.STRING`). |
 
 Possui construtor vazio e getters/setters para todos os campos.
 
@@ -163,14 +172,14 @@ Representa um serviço/mão de obra oferecido pela oficina (ex.: manutenção pr
 | `descricaoServico` | `String` | `@NotBlank` | Descrição detalhada do serviço. Obrigatória. |
 | `tempoEstimadoMinutos` | `int` | `@Positive` | Tempo estimado de execução, em minutos. Deve ser maior que zero. |
 | `custoTabelado` | `double` | `@PositiveOrZero` | Custo tabelado do serviço. Não pode ser negativo. |
-| `dataCriacao` | `LocalDateTime` | — | Data/hora de criação do registro. |
-| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. |
+| `dataCriacao` | `LocalDateTime` | — | Data/hora de criação do registro. **Gerada automaticamente** (`LocalDateTime.now()`) no `salvar()`; valor enviado pelo cliente é ignorado. |
+| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. **Gerada automaticamente** no `salvar()` e a cada `atualizar()`; valor enviado pelo cliente é ignorado. |
 
 Possui construtor vazio e getters/setters para todos os campos.
 
-### Enum Categorias
+### Enum CategoriaPeca
 
-Classe: [`br.com.mecaniQA.api.enums.Categorias`](src/main/java/br/com/mecaniQA/api/enums/Categorias.java)
+Classe: [`br.com.mecaniQA.api.enums.CategoriaPeca`](src/main/java/br/com/mecaniQA/api/enums/CategoriaPeca.java)
 
 Define as categorias possíveis para uma `Peca`:
 
@@ -182,21 +191,21 @@ MOTOR, SUSPENSAO, FREIOS, ELETRICA, ACESSORIOS
 
 ## Rotas da API (Endpoints)
 
-Todas as rotas recebem/retornam `JSON`. Não há autenticação nem versionamento de API configurados.
+Todas as rotas recebem/retornam `JSON`. Não há autenticação nem versionamento de API configurados. Todas vivem sob o prefixo `/api`, seguindo o padrão RESTful.
 
-### `/pecas`
+### `/api/pecas`
 
 Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/PecaController.java)
 
 | Método | Rota | Descrição | Corpo da requisição | Resposta de sucesso | Erros possíveis |
 |---|---|---|---|---|---|
-| `POST` | `/pecas` | Cadastra uma nova peça. O `codigoSKU` é gerado pelo servidor. | JSON de `Peca` (sem precisar informar `codigoSKU`) | `201 Created` + a peça criada (com `codigoSKU` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
-| `GET` | `/pecas` | Lista todas as peças cadastradas. | — | `200 OK` + lista (`array`) de `Peca` | — |
-| `GET` | `/pecas/{codigoSKU}` | Busca uma peça pelo código SKU. | — | `200 OK` + a peça encontrada | `404 Not Found` se o código não existir |
-| `PUT` | `/pecas/{codigoSKU}` | Atualiza os dados de uma peça existente. | JSON de `Peca` com os novos valores | `200 OK` + a peça atualizada | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
-| `DELETE` | `/pecas/{codigoSKU}` | Remove uma peça pelo código SKU. | — | `204 No Content` | `404 Not Found` se o código não existir |
+| `POST` | `/api/pecas` | Cadastra uma nova peça. O `codigoSKU` é gerado pelo servidor. | JSON de `Peca` (sem precisar informar `codigoSKU`) | `201 Created` + a peça criada (com `codigoSKU` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
+| `GET` | `/api/pecas` | Lista todas as peças cadastradas. | — | `200 OK` + lista (`array`) de `Peca` | — |
+| `GET` | `/api/pecas/{codigoSKU}` | Busca uma peça pelo código SKU. | — | `200 OK` + a peça encontrada | `404 Not Found` se o código não existir |
+| `PUT` | `/api/pecas/{codigoSKU}` | Atualiza os dados de uma peça existente. | JSON de `Peca` com os novos valores | `200 OK` + a peça atualizada | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
+| `DELETE` | `/api/pecas/{codigoSKU}` | Remove uma peça pelo código SKU. | — | `204 No Content` | `404 Not Found` se o código não existir |
 
-**Exemplo de corpo para `POST /pecas`:**
+**Exemplo de corpo para `POST /api/pecas`:**
 
 ```json
 {
@@ -212,9 +221,9 @@ Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/Peca
 }
 ```
 
-> O campo `categoriaPeca` deve ser um dos valores do enum `Categorias`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA` ou `ACESSORIOS`. Não é necessário (nem tem efeito) enviar `codigoSKU` — ele é sempre gerado pelo servidor.
+> O campo `categoriaPeca` deve ser um dos valores do enum `CategoriaPeca`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA` ou `ACESSORIOS`. Não é necessário (nem tem efeito) enviar `codigoSKU`, `dataCadastro` ou `dataAtualizacao` — todos são sempre gerados pelo servidor.
 
-**Exemplo de erro `404 Not Found` (`GET /pecas/999`, código inexistente):**
+**Exemplo de erro `404 Not Found` (`GET /api/pecas/999`, código inexistente):**
 
 ```json
 {
@@ -225,7 +234,7 @@ Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/Peca
 }
 ```
 
-**Exemplo de erro `400 Bad Request` (`POST /pecas` sem `nome` e com `categoriaPeca` ausente):**
+**Exemplo de erro `400 Bad Request` (`POST /api/pecas` sem `nome` e com `categoriaPeca` ausente):**
 
 ```json
 {
@@ -239,19 +248,19 @@ Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/Peca
 }
 ```
 
-### `/servicos`
+### `/api/servicos`
 
 Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/ServicoController.java)
 
 | Método | Rota | Descrição | Corpo da requisição | Resposta de sucesso | Erros possíveis |
 |---|---|---|---|---|---|
-| `POST` | `/servicos` | Cadastra um novo serviço. O `codigoServico` é gerado pelo servidor. | JSON de `Servico` (sem precisar informar `codigoServico`) | `201 Created` + o serviço criado (com `codigoServico` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
-| `GET` | `/servicos` | Lista todos os serviços cadastrados. | — | `200 OK` + lista (`array`) de `Servico` | — |
-| `GET` | `/servicos/{codigoServico}` | Busca um serviço pelo código. | — | `200 OK` + o serviço encontrado | `404 Not Found` se o código não existir |
-| `PUT` | `/servicos/{codigoServico}` | Atualiza os dados de um serviço existente. | JSON de `Servico` com os novos valores | `200 OK` + o serviço atualizado | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
-| `DELETE` | `/servicos/{codigoServico}` | Remove um serviço pelo código. | — | `204 No Content` | `404 Not Found` se o código não existir |
+| `POST` | `/api/servicos` | Cadastra um novo serviço. O `codigoServico` é gerado pelo servidor. | JSON de `Servico` (sem precisar informar `codigoServico`) | `201 Created` + o serviço criado (com `codigoServico` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
+| `GET` | `/api/servicos` | Lista todos os serviços cadastrados. | — | `200 OK` + lista (`array`) de `Servico` | — |
+| `GET` | `/api/servicos/{codigoServico}` | Busca um serviço pelo código. | — | `200 OK` + o serviço encontrado | `404 Not Found` se o código não existir |
+| `PUT` | `/api/servicos/{codigoServico}` | Atualiza os dados de um serviço existente. | JSON de `Servico` com os novos valores | `200 OK` + o serviço atualizado | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
+| `DELETE` | `/api/servicos/{codigoServico}` | Remove um serviço pelo código. | — | `204 No Content` | `404 Not Found` se o código não existir |
 
-**Exemplo de corpo para `POST /servicos`:**
+**Exemplo de corpo para `POST /api/servicos`:**
 
 ```json
 {
@@ -262,7 +271,7 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 }
 ```
 
-> Não é necessário (nem tem efeito) enviar `codigoServico` — ele é sempre gerado pelo servidor.
+> Não é necessário (nem tem efeito) enviar `codigoServico`, `dataCriacao` ou `dataAtualizacao` — todos são sempre gerados pelo servidor.
 
 ---
 
@@ -272,24 +281,24 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 
 - **`MeuPrimeiroApp`** — Classe isolada com seu próprio `main`, criada como exercício/demonstração inicial da disciplina. Instancia um `Servico`, define o nome e imprime no console. **Não faz parte do fluxo da API** (não é um `@Component`/`@RestController` e não é executada pelo Spring Boot).
 
-- **`PecaController`** — Expõe o CRUD de peças em `/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; quando `buscarPorId`, `atualizar` ou `deletar` não encontram o código informado, lança `RecursoNaoEncontradoException`. Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
+- **`PecaController`** — Expõe o CRUD de peças em `/api/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; quando `buscarPorId`, `atualizar` ou `deletar` não encontram o código informado, lança `RecursoNaoEncontradoException`. Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
 
-- **`ServicoController`** — Expõe o CRUD de serviços em `/servicos`. Mesmo padrão do `PecaController`: obtém `ServicoRepository.getInstance()` no construtor, valida com `@Valid`, lança `RecursoNaoEncontradoException` quando o código não existe e devolve `ResponseEntity` com o status correto.
+- **`ServicoController`** — Expõe o CRUD de serviços em `/api/servicos`. Mesmo padrão do `PecaController`: obtém `ServicoRepository.getInstance()` no construtor, valida com `@Valid`, lança `RecursoNaoEncontradoException` quando o código não existe e devolve `ResponseEntity` com o status correto.
 
 - **`PecaRepository`** — Implementa o padrão **Singleton** (construtor privado + `getInstance()` estático) e mantém uma `List<Peca>` em memória, além de um contador `AtomicLong contadorId` usado para gerar códigos. Métodos:
-  - `salvar(Peca)`: **sobrescreve `codigoSKU` com o próximo valor do contador** (`contadorId.incrementAndGet()`), adiciona a peça à lista e a retorna.
+  - `salvar(Peca)`: **sobrescreve `codigoSKU`** com o próximo valor do contador (`contadorId.incrementAndGet()`) e **preenche `dataCadastro` e `dataAtualizacao`** com `LocalDateTime.now()`, ignorando qualquer valor recebido no corpo da requisição; adiciona a peça à lista e a retorna.
   - `listarTodas()`: retorna a lista completa.
   - `buscarPorId(long)`: percorre a lista procurando `codigoSKU` igual; retorna `null` se não achar (o `null` é tratado pelo controller, que lança a exceção de 404).
-  - `atualizar(long, Peca)`: busca a peça existente e sobrescreve todos os campos (exceto `codigoSKU`, que nunca é alterado) com os valores recebidos; retorna `null` se o código não existir.
+  - `atualizar(long, Peca)`: busca a peça existente e sobrescreve todos os campos (exceto `codigoSKU` e `dataCadastro`, que nunca são alterados) com os valores recebidos; **`dataAtualizacao` é sempre gerada com `LocalDateTime.now()`**, não copiada do corpo da requisição; retorna `null` se o código não existir.
   - `deletar(long)`: busca e remove a peça da lista; retorna `boolean` indicando sucesso.
 
-- **`ServicoRepository`** — Mesmo padrão **Singleton** aplicado a `List<Servico>`, com seu próprio `AtomicLong contadorId`. Métodos equivalentes: `salvar` (gera `codigoServico` automaticamente), `getServicos` (lista todos), `buscarPorID`, `atualizar` (sobrescreve `nomeServico`, `custoTabelado`, `dataAtualizacao`, `descricaoServico` e `tempoEstimadoMinutos`), `deletar`.
+- **`ServicoRepository`** — Mesmo padrão **Singleton** aplicado a `List<Servico>`, com seu próprio `AtomicLong contadorId`. Métodos equivalentes: `salvar` (gera `codigoServico`, `dataCriacao` e `dataAtualizacao` automaticamente), `getServicos` (lista todos), `buscarPorID`, `atualizar` (sobrescreve `nomeServico`, `custoTabelado`, `descricaoServico` e `tempoEstimadoMinutos`, e gera `dataAtualizacao` com `LocalDateTime.now()`), `deletar`.
 
 - **`RecursoNaoEncontradoException`** — `RuntimeException` simples, lançada pelos controllers quando um `codigoSKU`/`codigoServico` não é encontrado no repositório.
 
 - **`GlobalExceptionHandler`** — Classe `@RestControllerAdvice` que centraliza o tratamento de exceções da API. Possui dois `@ExceptionHandler`: um para `RecursoNaoEncontradoException` (devolve `404 Not Found`) e outro para `MethodArgumentNotValidException` (devolve `400 Bad Request` com o mapa de campos inválidos e suas mensagens, extraído de `ex.getBindingResult().getFieldErrors()`).
 
-- **`Categorias`** — Enum simples com as categorias de peças suportadas.
+- **`CategoriaPeca`** — Enum simples com as categorias de peças suportadas.
 
 - **`Peca`** / **`Servico`** — Classes de modelo (POJOs) com atributos privados, construtor vazio, getters/setters e anotações de Bean Validation (`@NotBlank`, `@NotNull`, `@Positive`, `@PositiveOrZero`) nos campos obrigatórios. São usadas tanto para representar os dados internamente quanto como corpo de requisição/resposta JSON nos controllers (não há DTOs separados).
 
@@ -322,32 +331,32 @@ A aplicação sobe por padrão em `http://localhost:8080` (porta padrão do Spri
 Como não há dados pré-carregados nem banco persistente, é necessário cadastrar peças/serviços via `POST` antes de consultá-los. Exemplos com `curl`:
 
 ```bash
-# Criar uma peça (codigoSKU é gerado pelo servidor, não precisa ser enviado)
-curl -X POST http://localhost:8080/pecas \
+# Criar uma peça (codigoSKU e datas são gerados pelo servidor, não precisam ser enviados)
+curl -X POST http://localhost:8080/api/pecas \
   -H "Content-Type: application/json" \
   -d '{"nome":"Filtro de Óleo","codigobarras":123456,"fornecedor":"Mann","quantidade":20,"precoCusto":15.0,"precoVenda":30.0,"tamanho":"P","cor":"Branco","categoriaPeca":"MOTOR"}'
 
 # Listar peças
-curl http://localhost:8080/pecas
+curl http://localhost:8080/api/pecas
 
 # Buscar uma peça inexistente -> 404 Not Found
-curl -i http://localhost:8080/pecas/999
+curl -i http://localhost:8080/api/pecas/999
 
 # Criar uma peça com dados inválidos (sem nome, sem categoria) -> 400 Bad Request
-curl -i -X POST http://localhost:8080/pecas \
+curl -i -X POST http://localhost:8080/api/pecas \
   -H "Content-Type: application/json" \
   -d '{"fornecedor":"Bosch","quantidade":10,"precoCusto":10.0,"precoVenda":20.0}'
 
-# Criar um serviço (codigoServico é gerado pelo servidor, não precisa ser enviado)
-curl -X POST http://localhost:8080/servicos \
+# Criar um serviço (codigoServico e datas são gerados pelo servidor, não precisam ser enviados)
+curl -X POST http://localhost:8080/api/servicos \
   -H "Content-Type: application/json" \
   -d '{"nomeServico":"Troca de Óleo","descricaoServico":"Troca de óleo e filtro","tempoEstimadoMinutos":30,"custoTabelado":80.0}'
 
 # Listar serviços
-curl http://localhost:8080/servicos
+curl http://localhost:8080/api/servicos
 
 # Remover um serviço -> 204 No Content (ou 404 se o código não existir)
-curl -i -X DELETE http://localhost:8080/servicos/1
+curl -i -X DELETE http://localhost:8080/api/servicos/1
 ```
 
 Rodar os testes automatizados (smoke test do contexto Spring):

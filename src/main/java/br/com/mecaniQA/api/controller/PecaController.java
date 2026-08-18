@@ -10,22 +10,30 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// ==================== Rotas CRUD ==================
+// ===================== CREATE =====================
+
 @RestController
-@RequestMapping("/pecas")
+@RequestMapping("/api/pecas")
 public class PecaController {
 
     private final PecaRepository repository = PecaRepository.getInstance();
 
+    // ==================== CREATE ====================
     @PostMapping
     public ResponseEntity<Peca> salvar(@Valid @RequestBody Peca peca) {
         Peca pecaSalva = repository.salvar(peca);
         return ResponseEntity.status(HttpStatus.CREATED).body(pecaSalva);
     }
 
+    // ===================== READ =====================
+
     @GetMapping
     public List<Peca> listarTodas() {
         return repository.listarTodas();
     }
+
+    // ===================== READ por ID =====================
 
     @GetMapping("/{codigoSKU}")
     public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
@@ -35,6 +43,8 @@ public class PecaController {
         }
         return ResponseEntity.ok(peca);
     }
+
+    // ===================== UPDATE =====================
 
     @PutMapping("/{codigoSKU}")
     public ResponseEntity<Peca> atualizar(
@@ -47,6 +57,8 @@ public class PecaController {
         }
         return ResponseEntity.ok(pecaAtualizada);
     }
+
+    // ===================== DELETE =====================
 
     @DeleteMapping("/{codigoSKU}")
     public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {

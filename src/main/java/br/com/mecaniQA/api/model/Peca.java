@@ -1,6 +1,6 @@
 package br.com.mecaniQA.api.model;
 
-import br.com.mecaniQA.api.enums.Categorias;
+import br.com.mecaniQA.api.enums.CategoriaPeca;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,7 +42,7 @@ public class Peca {
     @NotNull(message = "A categoria da peça é obrigatória")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Categorias categoriaPeca;
+    private CategoriaPeca categoriaPeca;
 
     // ===================== CONSTRUTOR =====================
     public Peca() {
@@ -93,7 +93,7 @@ public class Peca {
         return cor;
     }
 
-    public Categorias getCategoriaPeca() {
+    public CategoriaPeca getCategoriaPeca() {
         return categoriaPeca;
     }
 
@@ -142,7 +142,7 @@ public class Peca {
         cor = novaCor;
     }
 
-    public void setCategoriaPeca(Categorias novaCategoriaPeca) {
+    public void setCategoriaPeca(CategoriaPeca novaCategoriaPeca) {
         categoriaPeca = novaCategoriaPeca;
     }
 

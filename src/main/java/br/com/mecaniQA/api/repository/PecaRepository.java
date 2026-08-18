@@ -1,7 +1,7 @@
 package br.com.mecaniQA.api.repository;
 
 import br.com.mecaniQA.api.model.Peca;
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,6 +34,8 @@ public class PecaRepository {
 
     public Peca salvar(Peca peca) {
         peca.setCodigoSKU(contadorId.incrementAndGet());
+        peca.setDataCadastro(LocalDateTime.now());
+        peca.setDataAtualizacao(LocalDateTime.now());
         pecas.add(peca);
         return peca;
     }
@@ -75,7 +77,7 @@ public class PecaRepository {
         peca.setTamanho(pecaAtualizada.getTamanho());
         peca.setCor(pecaAtualizada.getCor());
         peca.setCategoriaPeca(pecaAtualizada.getCategoriaPeca());
-        peca.setDataAtualizacao(pecaAtualizada.getDataAtualizacao());
+        peca.setDataAtualizacao(LocalDateTime.now());
         return peca;
     }
 

@@ -11,19 +11,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+    // ==================== Rotas CRUD ==================
+    // ===================== READ =====================
 @RestController
-@RequestMapping("/servicos")
+@RequestMapping("/api/servicos")
 public class ServicoController {
 
-    // ===================== REPOSITORY =====================
-
     private final ServicoRepository repository;
-
-    // ===================== CONSTRUTOR =====================
 
     public ServicoController() {
         this.repository = ServicoRepository.getInstance();
     }
+
 
     // ===================== CREATE =====================
 
