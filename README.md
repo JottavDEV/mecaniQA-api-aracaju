@@ -146,7 +146,7 @@ Representa uma peça do estoque da oficina. Está anotada com `@Entity` e `@Tabl
 | `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. |
 | `tamanho` | `String` | — | Tamanho da peça. |
 | `cor` | `String` | — | Cor da peça. |
-| `categoriaPeca` | `Categorias` (enum) | `@NotNull` | Categoria da peça. Obrigatória; persistida/serializada como texto (`EnumType.STRING`). |
+| `categoriaPeca` | `CategoriaPeca` (enum) | `@NotNull` | Categoria da peça. Obrigatória; persistida/serializada como texto (`EnumType.STRING`). |
 
 Possui construtor vazio e getters/setters para todos os campos.
 
@@ -212,7 +212,7 @@ Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/Peca
 }
 ```
 
-> O campo `categoriaPeca` deve ser um dos valores do enum `Categorias`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA` ou `ACESSORIOS`. Não é necessário (nem tem efeito) enviar `codigoSKU` — ele é sempre gerado pelo servidor.
+> O campo `categoriaPeca` deve ser um dos valores do enum `CategoriaPeca`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA` ou `ACESSORIOS`. Não é necessário (nem tem efeito) enviar `codigoSKU` — ele é sempre gerado pelo servidor.
 
 **Exemplo de erro `404 Not Found` (`GET /pecas/999`, código inexistente):**
 
@@ -289,7 +289,7 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 
 - **`GlobalExceptionHandler`** — Classe `@RestControllerAdvice` que centraliza o tratamento de exceções da API. Possui dois `@ExceptionHandler`: um para `RecursoNaoEncontradoException` (devolve `404 Not Found`) e outro para `MethodArgumentNotValidException` (devolve `400 Bad Request` com o mapa de campos inválidos e suas mensagens, extraído de `ex.getBindingResult().getFieldErrors()`).
 
-- **`Categorias`** — Enum simples com as categorias de peças suportadas.
+- **`CategoriaPeca`** — Enum simples com as categorias de peças suportadas.
 
 - **`Peca`** / **`Servico`** — Classes de modelo (POJOs) com atributos privados, construtor vazio, getters/setters e anotações de Bean Validation (`@NotBlank`, `@NotNull`, `@Positive`, `@PositiveOrZero`) nos campos obrigatórios. São usadas tanto para representar os dados internamente quanto como corpo de requisição/resposta JSON nos controllers (não há DTOs separados).
 

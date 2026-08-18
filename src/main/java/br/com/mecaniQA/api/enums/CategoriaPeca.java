@@ -1,6 +1,6 @@
 package br.com.mecaniQA.api.enums;
 
-public enum Categorias {
+public enum CategoriaPeca {
     MOTOR,
     SUSPENSAO,
     FREIOS,
