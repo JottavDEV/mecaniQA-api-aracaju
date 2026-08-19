@@ -1,0 +1,255 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: faculdade
+meta:
+  id: wrk_8deb32a8beaf4cba80b1e04612cae501
+  created: 1730760313305
+  modified: 1786662443879
+  description: ""
+collection:
+  - name: projeto de desenvolvimento mobile
+    meta:
+      id: fld_97a075d09e5a4abf9778e3148c41ea0d
+      created: 1786662460365
+      modified: 1786662460365
+      sortKey: -1786662460365
+      description: ""
+    children:
+      - name: restaurant-api
+        meta:
+          id: fld_e704fc26cba8480d8a56888905ff66a4
+          created: 1786662470392
+          modified: 1786909648963
+          sortKey: -1786662470392
+          description: ""
+  - name: mecaniQA-api-aracaju
+    meta:
+      id: fld_7c5ff37b157b4bbe866c7229e6e17f1b
+      created: 1786925426035
+      modified: 1787097842596
+      sortKey: -1786925426035
+      description: ""
+    children:
+      - url: http://localhost:8080/api/servicos
+        name: Listar Servicos
+        meta:
+          id: req_0d0a3cf9c9784cf3ab56d461bd322643
+          created: 1786925430576
+          modified: 1787097067133
+          isPrivate: false
+          description: ""
+          sortKey: -1786925430576
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/servicos
+        name: Criar Servicos
+        meta:
+          id: req_2efa3eb1b53f4c59849453e4976144a3
+          created: 1786925465737
+          modified: 1787097582042
+          isPrivate: false
+          description: ""
+          sortKey: -1786917552658.5
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nomeServico": "string",
+              "descricaoServico": "string",
+              "tempoEstimadoMinutos": "int (número)",
+              "custoTabelado": "double (número)"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: ""
+            value: "Content-Type: application/json"
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/pecas
+        name: Criar Pecas
+        meta:
+          id: req_102ddf1611204edfab99a95066ee0a0c
+          created: 1787096604643
+          modified: 1787097636163
+          isPrivate: false
+          description: ""
+          sortKey: -1787096604643
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nome": "Roda2",
+              "codigobarras": "126573128",
+              "fornecedor": "Pirelli",
+              "quantidade": "10",
+              "precoCusto": "50",
+              "precoVenda": "50.1",
+              "tamanho": "aro 19",
+              "cor": "BlackPiano",
+              "categoriaPeca": "SUSPENSAO"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: ""
+            value: "Content-Type: application/json"
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/pecas/{id}
+        name: Atualizar Peça
+        meta:
+          id: req_08e5d6de9bc84e31b27f2d6632be532e
+          created: 1787096607365
+          modified: 1787097391933
+          isPrivate: false
+          description: ""
+          sortKey: -1787096607365
+        method: PUT
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "nome": "string",
+              "codigobarras": "long (número)",
+              "fornecedor": "string",
+              "quantidade": "int (número)",
+              "precoCusto": "double (número)",
+              "precoVenda": "double (número)",
+              "tamanho": "string",
+              "cor": "string",
+              "categoriaPeca": "MOTOR | SUSPENSAO | FREIOS | ELETRICA | ACESSORIOS"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/pecas/3
+        name: Deletar Peça
+        meta:
+          id: req_9bc62575fd204a91a56427aeacc878fd
+          created: 1787096609534
+          modified: 1787097662119
+          isPrivate: false
+          description: ""
+          sortKey: -1787096609534
+        method: DELETE
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/pecas
+        name: Listar Peças
+        meta:
+          id: req_059b36ff14f04cf8a606b3362a92972b
+          created: 1787096612523
+          modified: 1787097344439
+          isPrivate: false
+          description: ""
+          sortKey: -1787096612523
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/servicos/{id}
+        name: Deletar Servicos
+        meta:
+          id: req_fb8d8850dc0f40e6ada97c0bf9019db2
+          created: 1787096614425
+          modified: 1787097409674
+          isPrivate: false
+          description: ""
+          sortKey: -1786917552558.5
+        method: DELETE
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8080/api/servicos/{id}
+        name: Atualizar Servicos
+        meta:
+          id: req_3ccc18a0acdc48b58a4f7dd2f9631a08
+          created: 1787096619459
+          modified: 1787097427785
+          isPrivate: false
+          description: ""
+          sortKey: -1786917552608.5
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nomeServico": "string",
+              "descricaoServico": "string",
+              "tempoEstimadoMinutos": "int (número)",
+              "custoTabelado": "double (número)"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_f4eb3523466fe73cb2264d936a492d5c2394a91f
+    created: 1786662444067
+    modified: 1786662444067
+environments:
+  name: Base Environment
+  meta:
+    id: env_f4eb3523466fe73cb2264d936a492d5c2394a91f
+    created: 1730760313308
+    modified: 1786662443876
+    isPrivate: false
