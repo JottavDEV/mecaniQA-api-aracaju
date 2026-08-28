@@ -1,6 +1,5 @@
 package br.com.mecaniQA.api.repository;
 
-import br.com.mecaniQA.api.model.Peca;
 import java.time.LocalDateTime;
 import br.com.mecaniQA.api.model.Servico;
 
