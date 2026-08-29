@@ -60,7 +60,7 @@ public class PecaController {
 
     // ===================== DELETE =====================
 
-    @DeleteMapping("/{codigoSKU}")
+    @DeleteMapping("/{códigoSKU}")
     public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
         boolean removida = repository.deletar(codigoSKU);
         if (!removida) {
