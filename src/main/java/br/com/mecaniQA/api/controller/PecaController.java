@@ -1,6 +1,5 @@
 package br.com.mecaniQA.api.controller;
 
-import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
 import br.com.mecaniQA.api.model.Peca;
 import br.com.mecaniQA.api.repository.PecaRepository;
 import jakarta.validation.Valid;
@@ -39,7 +38,7 @@ public class PecaController {
     public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
         Peca peca = repository.buscarPorId(codigoSKU);
         if (peca == null) {
-            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(peca);
     }
@@ -53,18 +52,18 @@ public class PecaController {
 
         Peca pecaAtualizada = repository.atualizar(codigoSKU, peca);
         if (pecaAtualizada == null) {
-            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(pecaAtualizada);
     }
 
     // ===================== DELETE =====================
 
-    @DeleteMapping("/{códigoSKU}")
+    @DeleteMapping("/{codigoSKU}")
     public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
         boolean removida = repository.deletar(codigoSKU);
         if (!removida) {
-            throw new RecursoNaoEncontradoException("Peça com código SKU " + codigoSKU + " não encontrada");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
     }
