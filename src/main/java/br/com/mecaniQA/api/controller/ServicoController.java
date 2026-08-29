@@ -1,6 +1,5 @@
 package br.com.mecaniQA.api.controller;
 
-import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
 import br.com.mecaniQA.api.model.Servico;
 import br.com.mecaniQA.api.repository.ServicoRepository;
 import jakarta.validation.Valid;
@@ -36,7 +35,7 @@ public class ServicoController {
 
     @GetMapping
     public List<Servico> listarTodos() {
-        return repository.getServicos();
+        return repository.listarTodos();
     }
 
     // ===================== READ - POR ID =====================
@@ -47,7 +46,7 @@ public class ServicoController {
 
         Servico servico = repository.buscarPorID(codigoServico);
         if (servico == null) {
-            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(servico);
     }
@@ -61,7 +60,7 @@ public class ServicoController {
 
         Servico servicoAtualizado = repository.atualizar(codigoServico, servico);
         if (servicoAtualizado == null) {
-            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(servicoAtualizado);
     }
@@ -74,7 +73,7 @@ public class ServicoController {
 
         boolean removido = repository.deletar(codigoServico);
         if (!removido) {
-            throw new RecursoNaoEncontradoException("Serviço com código " + codigoServico + " não encontrado");
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
     }

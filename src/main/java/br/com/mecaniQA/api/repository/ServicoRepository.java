@@ -44,7 +44,7 @@ public class ServicoRepository {
     // CRUD - READ
     // TODOS
 
-    public List<Servico> getServicos() {
+    public List<Servico> listarTodos() {
         return servicos;
     }
 

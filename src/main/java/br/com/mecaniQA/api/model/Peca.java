@@ -1,7 +1,6 @@
 package br.com.mecaniQA.api.model;
 
 import br.com.mecaniQA.api.enums.CategoriaPeca;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -9,8 +8,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "pecas")
 public class Peca {
 
     // ===================== ATRIBUTOS =====================
@@ -40,8 +37,6 @@ public class Peca {
     private String cor;
 
     @NotNull(message = "A categoria da peça é obrigatória")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private CategoriaPeca categoriaPeca;
 
     // ===================== CONSTRUTOR =====================
