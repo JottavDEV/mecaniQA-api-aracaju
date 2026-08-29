@@ -59,7 +59,6 @@ src
 ├── main
 │   ├── java/br/com/mecaniQA/api
 │   │   ├── ApiApplication.java          # Classe principal (bootstrap do Spring Boot)
-│   │   ├── MeuPrimeiroApp.java          # Classe avulsa de exercício/demonstração (não faz parte da API)
 │   │   ├── controller
 │   │   │   ├── PecaController.java      # Endpoints REST de /api/pecas
 │   │   │   └── ServicoController.java   # Endpoints REST de /api/servicos
@@ -278,8 +277,6 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 ## Detalhamento do código por classe
 
 - **`ApiApplication`** — Classe principal, anotada com `@SpringBootApplication`. Ponto de entrada da aplicação (`main`), que sobe o servidor embarcado do Spring Boot.
-
-- **`MeuPrimeiroApp`** — Classe isolada com seu próprio `main`, criada como exercício/demonstração inicial da disciplina. Instancia um `Servico`, define o nome e imprime no console. **Não faz parte do fluxo da API** (não é um `@Component`/`@RestController` e não é executada pelo Spring Boot).
 
 - **`PecaController`** — Expõe o CRUD de peças em `/api/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; quando `buscarPorId`, `atualizar` ou `deletar` não encontram o código informado, lança `RecursoNaoEncontradoException`. Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
 
