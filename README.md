@@ -64,9 +64,6 @@ src
 │   │   │   └── ServicoController.java   # Endpoints REST de /api/servicos
 │   │   ├── enums
 │   │   │   └── CategoriaPeca.java       # Categorias possíveis de uma Peça
-│   │   ├── exception
-│   │   │   ├── RecursoNaoEncontradoException.java  # Exceção lançada quando um código não existe
-│   │   │   └── GlobalExceptionHandler.java         # Tratamento global de erros (404 e 400)
 │   │   ├── model
 │   │   │   ├── Peca.java                # Entidade Peça (com validação Bean Validation)
 │   │   │   └── Servico.java             # Modelo Serviço (com validação Bean Validation)
@@ -80,7 +77,7 @@ src
         └── ApiApplicationTests.java     # Teste de contexto (smoke test) do Spring Boot
 ```
 
-Não existe camada de **Service** (regra de negócio) nem **DTO** — os `Controller`s conversam diretamente com o `Repository`, e as próprias classes de `model` são usadas como corpo de requisição/resposta. Existe, porém, uma camada transversal de **tratamento de exceções** (`exception`), usada por ambos os controllers.
+Não existe camada de **Service** (regra de negócio) nem **DTO** — os `Controller`s conversam diretamente com o `Repository`, e as próprias classes de `model` são usadas como corpo de requisição/resposta. 
 
 ---
 
@@ -104,8 +101,6 @@ Repository (Singleton, lista em memória)
 Resposta em JSON (ResponseEntity com status HTTP correto: 200/201/204)
 ```
 
-Se o corpo da requisição for inválido, ou se o código buscado/atualizado/removido não existir, o fluxo é desviado para o `GlobalExceptionHandler` (ver seção abaixo), que devolve uma resposta de erro padronizada em vez de propagar a exceção.
-
 Não há um `@Service` intermediário: o `Controller` recebe o JSON já desserializado como objeto (`Peca` ou `Servico`) e repassa direto para o `Repository` correspondente, que é quem contém a lógica de CRUD.
 
 ### Persistência de dados (importante)
@@ -120,14 +115,7 @@ Ou seja, **nenhum banco de dados real é utilizado no momento**. Os dados de Pe�
 
 Consequência prática: **todos os dados cadastrados são perdidos quando a aplicação é reiniciada** — e, junto com eles, o contador usado para gerar os códigos também volta a zero (ver seção seguinte).
 
-### Tratamento de erros e validação
-
-A API centraliza o tratamento de erros em [`GlobalExceptionHandler`](src/main/java/br/com/mecaniQA/api/exception/GlobalExceptionHandler.java), uma classe `@RestControllerAdvice` que intercepta exceções lançadas pelos controllers e as converte em respostas HTTP padronizadas:
-
-| Situação | Exceção | Status HTTP | Corpo da resposta |
-|---|---|---|---|
-| Código (`codigoSKU`/`codigoServico`) não encontrado em `GET`/`PUT`/`DELETE` por id | `RecursoNaoEncontradoException` | `404 Not Found` | `{ "status": 404, "erro": "Recurso não encontrado", "mensagem": "...", "timestamp": "..." }` |
-| Corpo de `POST`/`PUT` com campos inválidos (Bean Validation) | `MethodArgumentNotValidException` | `400 Bad Request` | `{ "status": 400, "erro": "Dados inválidos", "campos": { "nome": "O nome da peça é obrigatório", ... }, "timestamp": "..." }` |
+### Validação
 
 As regras de validação ficam declaradas diretamente nos atributos de `Peca` e `Servico` (anotações `jakarta.validation.constraints`, como `@NotBlank`, `@NotNull`, `@Positive` e `@PositiveOrZero` — detalhadas na tabela de cada model, mais abaixo) e são disparadas automaticamente pelo `@Valid` presente nos parâmetros `@RequestBody` dos métodos de criação e atualização dos controllers.
 
@@ -278,9 +266,9 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 
 - **`ApiApplication`** — Classe principal, anotada com `@SpringBootApplication`. Ponto de entrada da aplicação (`main`), que sobe o servidor embarcado do Spring Boot.
 
-- **`PecaController`** — Expõe o CRUD de peças em `/api/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; quando `buscarPorId`, `atualizar` ou `deletar` não encontram o código informado, lança `RecursoNaoEncontradoException`. Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
+- **`PecaController`** — Expõe o CRUD de peças em `/api/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
 
-- **`ServicoController`** — Expõe o CRUD de serviços em `/api/servicos`. Mesmo padrão do `PecaController`: obtém `ServicoRepository.getInstance()` no construtor, valida com `@Valid`, lança `RecursoNaoEncontradoException` quando o código não existe e devolve `ResponseEntity` com o status correto.
+- **`ServicoController`** — Expõe o CRUD de serviços em `/api/servicos`. Mesmo padrão do `PecaController`: obtém `ServicoRepository.getInstance()` no construtor, valida com `@Valid`, e devolve `ResponseEntity` com o status correto.
 
 - **`PecaRepository`** — Implementa o padrão **Singleton** (construtor privado + `getInstance()` estático) e mantém uma `List<Peca>` em memória, além de um contador `AtomicLong contadorId` usado para gerar códigos. Métodos:
   - `salvar(Peca)`: **sobrescreve `codigoSKU`** com o próximo valor do contador (`contadorId.incrementAndGet()`) e **preenche `dataCadastro` e `dataAtualizacao`** com `LocalDateTime.now()`, ignorando qualquer valor recebido no corpo da requisição; adiciona a peça à lista e a retorna.
@@ -290,10 +278,6 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
   - `deletar(long)`: busca e remove a peça da lista; retorna `boolean` indicando sucesso.
 
 - **`ServicoRepository`** — Mesmo padrão **Singleton** aplicado a `List<Servico>`, com seu próprio `AtomicLong contadorId`. Métodos equivalentes: `salvar` (gera `codigoServico`, `dataCriacao` e `dataAtualizacao` automaticamente), `getServicos` (lista todos), `buscarPorID`, `atualizar` (sobrescreve `nomeServico`, `custoTabelado`, `descricaoServico` e `tempoEstimadoMinutos`, e gera `dataAtualizacao` com `LocalDateTime.now()`), `deletar`.
-
-- **`RecursoNaoEncontradoException`** — `RuntimeException` simples, lançada pelos controllers quando um `codigoSKU`/`codigoServico` não é encontrado no repositório.
-
-- **`GlobalExceptionHandler`** — Classe `@RestControllerAdvice` que centraliza o tratamento de exceções da API. Possui dois `@ExceptionHandler`: um para `RecursoNaoEncontradoException` (devolve `404 Not Found`) e outro para `MethodArgumentNotValidException` (devolve `400 Bad Request` com o mapa de campos inválidos e suas mensagens, extraído de `ex.getBindingResult().getFieldErrors()`).
 
 - **`CategoriaPeca`** — Enum simples com as categorias de peças suportadas.
 
@@ -372,4 +356,3 @@ Estes pontos refletem o estado atual do código e são úteis para quem for evol
 - **Sem camada de serviço (`@Service`)**: a regra de negócio (hoje mínima) está toda dentro dos repositórios; os controllers chamam os repositórios diretamente.
 - **`Peca` está anotada como `@Entity` mas não é gerenciada pelo JPA** (autoconfiguração desativada) **e não possui `@Id`**, o que impediria o mapeamento caso o JPA fosse reativado sem ajustes.
 - **`MeuPrimeiroApp.java`** é uma classe de exercício isolada, sem relação com os endpoints da API — mantê-la ou removê-la não afeta o funcionamento do serviço REST.
-- **Corpo de erro sem `@ControllerAdvice` para exceções genéricas**: exceções não mapeadas (ex.: erro de parsing de JSON malformado, `NumberFormatException` num `@PathVariable`) ainda caem no tratamento padrão do Spring, não no formato padronizado do `GlobalExceptionHandler`.
