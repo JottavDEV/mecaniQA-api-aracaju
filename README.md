@@ -21,8 +21,9 @@ A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Como o sistema funciona](#como-o-sistema-funciona)
   - [Arquitetura em camadas](#arquitetura-em-camadas)
-  - [Persistência de dados (importante)](#persistência-de-dados-importante)
-  - [Tratamento de erros e validação](#tratamento-de-erros-e-validação)
+  - [Persistência de dados](#persistência-de-dados)
+  - [Exceções customizadas e códigos HTTP](#exceções-customizadas-e-códigos-http)
+  - [Validação](#validação)
 - [Modelos de dados (Entidades)](#modelos-de-dados-entidades)
   - [Peca](#peca)
   - [Servico](#servico)
@@ -44,9 +45,9 @@ A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar
 | Java | 21 (via toolchain do Gradle) |
 | Spring Boot | 4.1.0 |
 | Spring Web MVC | `spring-boot-starter-webmvc` |
-| Spring Data JPA | `spring-boot-starter-data-jpa` (dependência presente, porém **desabilitada** em runtime — ver seção de persistência) |
-| Bean Validation | `spring-boot-starter-validation` (Jakarta Validation, usado nos models `Peca` e `Servico`) |
-| Banco de dados | H2 (`com.h2database:h2`), em memória — **não está ativo atualmente** |
+| Bean Validation | `spring-boot-starter-validation` (Jakarta Validation, usado nos models e DTOs) |
+| Banco de dados | **MySQL 8+**, acessado com **JDBC nativo** (`java.sql`) via `mysql-connector-j` |
+| ORM | **Nenhum** — proibido nesta etapa (sem JPA, Hibernate ou Spring Data) |
 | Build | Gradle (Kotlin DSL) 9.5.1, plugin `io.spring.dependency-management` |
 | Testes | JUnit 5 (`spring-boot-starter-webmvc-test`, `junit-platform-launcher`) |
 
@@ -55,29 +56,26 @@ A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar
 ## Estrutura do projeto
 
 ```
-src
-├── main
-│   ├── java/br/com/mecaniQA/api
-│   │   ├── ApiApplication.java          # Classe principal (bootstrap do Spring Boot)
-│   │   ├── controller
-│   │   │   ├── PecaController.java      # Endpoints REST de /api/pecas
-│   │   │   └── ServicoController.java   # Endpoints REST de /api/servicos
-│   │   ├── enums
-│   │   │   └── CategoriaPeca.java       # Categorias possíveis de uma Peça
-│   │   ├── model
-│   │   │   ├── Peca.java                # Entidade Peça (com validação Bean Validation)
-│   │   │   └── Servico.java             # Modelo Serviço (com validação Bean Validation)
-│   │   └── repository
-│   │       ├── PecaRepository.java      # Armazenamento em memória das Peças (Singleton) + geração de código/datas
-│   │       └── ServicoRepository.java   # Armazenamento em memória dos Serviços (Singleton) + geração de código/datas
-│   └── resources
-│       └── application.properties       # Configurações da aplicação
-└── test
-    └── java/br/com/mecaniQA/api
-        └── ApiApplicationTests.java     # Teste de contexto (smoke test) do Spring Boot
+database
+└── mecaniqa.sql                         # DDL (tabelas) + DML (dados iniciais) do MySQL
+src/main/java/br/com/mecaniQA/api
+├── ApiApplication.java                  # Bootstrap do Spring Boot
+├── config
+│   └── ConexaoFactory.java              # Abre conexões JDBC (java.sql.DriverManager)
+├── controller                           # Recebem a requisição, chamam o Service, decidem o status HTTP (try/catch)
+├── service                              # Regras de negócio e comunicação com os repositórios
+├── repository
+│   ├── Repository.java                  # Interface genérica Repository<T, ID> (contrato do CRUD)
+│   └── *Repository.java                 # Implementações JDBC com SQL escrito à mão
+├── mapper
+│   ├── ResultSetMapper.java             # Contrato dos mappers de ResultSet
+│   ├── *ResultSetMapper.java            # ResultSet -> objeto de modelo
+│   └── *Mapper.java                     # Modelo -> DTO de resposta
+├── exception                            # Exceções customizadas
+├── dto, enums, model
+src/main/resources
+└── application.properties               # Configuração da conexão com o MySQL
 ```
-
-Não existe camada de **Service** (regra de negócio) nem **DTO** — os `Controller`s conversam diretamente com o `Repository`, e as próprias classes de `model` são usadas como corpo de requisição/resposta. 
 
 ---
 
@@ -85,39 +83,50 @@ Não existe camada de **Service** (regra de negócio) nem **DTO** — os `Contro
 
 ### Arquitetura em camadas
 
-O fluxo de uma requisição HTTP é:
-
 ```
 Cliente (Postman/Insomnia/Front)
-      │  JSON
+      │  JSON (DTO)
       ▼
-Controller (@RestController)
-      │  valida o corpo com @Valid (Bean Validation)
-      │  chama diretamente
+Controller  ── só recebe a requisição, chama o Service e devolve o status HTTP
+      │         (erros tratados manualmente com try/catch; sem @ExceptionHandler)
       ▼
-Repository (Singleton, lista em memória)
-      │  gera o código e as datas (cadastro/criação e atualização) automaticamente
+Service     ── regras de negócio, validações e uso dos repositórios
+      │         (lança as exceções customizadas)
       ▼
-Resposta em JSON (ResponseEntity com status HTTP correto: 200/201/204)
+Repository  ── JDBC puro: PreparedStatement + SQL manual (INSERT/SELECT/UPDATE/DELETE)
+      │         implementa Repository<T, ID>
+      ▼
+ResultSetMapper ── converte cada linha do ResultSet em objeto de modelo
+      ▼
+MySQL
 ```
 
-Não há um `@Service` intermediário: o `Controller` recebe o JSON já desserializado como objeto (`Peca` ou `Servico`) e repassa direto para o `Repository` correspondente, que é quem contém a lógica de CRUD.
+Regra de ouro: **os Controllers nunca chamam os repositórios diretamente**.
 
-### Persistência de dados (importante)
+### Persistência de dados
 
-Apesar do projeto declarar as dependências `spring-boot-starter-data-jpa` e `h2` no `build.gradle.kts`, e da entidade `Peca` estar anotada com `@Entity`/`@Table`, o arquivo [`application.properties`](src/main/resources/application.properties) **desativa explicitamente** a auto-configuração de banco de dados:
+Os dados ficam no **MySQL**. O script [`database/mecaniqa.sql`](database/mecaniqa.sql) cria o banco `mecaniqa`, as tabelas (`peca`, `servico`, `ordem_servico`, `ordem_servico_servico`, `pedido_pecas`, `item_pedido`) e insere alguns dados iniciais. Ele precisa ser executado **antes** de subir a API.
 
-```properties
-spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
-```
+Pontos do acesso a dados:
 
-Ou seja, **nenhum banco de dados real é utilizado no momento**. Os dados de Peças e Serviços ficam guardados apenas em **listas em memória** (`ArrayList`), dentro das classes `PecaRepository` e `ServicoRepository`, que são implementadas como **Singleton** (uma única instância viva durante a execução da aplicação).
+- Cada repositório abre a conexão com `ConexaoFactory` e usa `try-with-resources` (conexão, `PreparedStatement` e `ResultSet` sempre fechados).
+- Todos os valores entram por `PreparedStatement` (`?`), nunca por concatenação de SQL.
+- A OS (com seus serviços) e o pedido (com seus itens) são gravados em **transação** (`commit`/`rollback`).
+- Tabelas associativas: `ordem_servico_servico` (OS ↔ Serviço) e `item_pedido` (Pedido ↔ Peça, com a quantidade). Apagar uma OS/pedido apaga as linhas associadas (`ON DELETE CASCADE`); apagar uma peça ou serviço ainda em uso é bloqueado (`ON DELETE RESTRICT`) e a API responde `400`.
 
-Consequência prática: **todos os dados cadastrados são perdidos quando a aplicação é reiniciada** — e, junto com eles, o contador usado para gerar os códigos também volta a zero (ver seção seguinte).
+### Exceções customizadas e códigos HTTP
+
+Não existe `@ExceptionHandler` nem `@ControllerAdvice`: cada Controller captura as exceções com `try/catch` e define o status.
+
+| Exceção | Quando é lançada | Status |
+|---|---|---|
+| `PecaNaoEncontradaException`, `ServicoNaoEncontradoException`, `OrdemServicoNaoEncontradaException`, `PedidoPecasNaoEncontradoException` (filhas de `RecursoNaoEncontradoException`) | registro não existe | `404` (ou `400` quando o item inexistente veio no corpo da requisição, ex.: serviço de uma OS) |
+| `DadosInvalidosException` | dado inválido / regra violada, inclusive apagar peça ou serviço ainda em uso | `400` |
+| `ErroBancoDadosException` | qualquer `SQLException` do JDBC (embrulhada pelos repositórios) | `500` |
 
 ### Validação
 
-As regras de validação ficam declaradas diretamente nos atributos de `Peca` e `Servico` (anotações `jakarta.validation.constraints`, como `@NotBlank`, `@NotNull`, `@Positive` e `@PositiveOrZero` — detalhadas na tabela de cada model, mais abaixo) e são disparadas automaticamente pelo `@Valid` presente nos parâmetros `@RequestBody` dos métodos de criação e atualização dos controllers.
+As anotações de Bean Validation (`@NotBlank`, `@NotNull`, `@Positive`, ...) nos models e DTOs continuam sendo disparadas pelo `@Valid` nos controllers; as validações de regra de negócio ficam nos Services.
 
 ---
 
@@ -264,32 +273,32 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 
 ## Detalhamento do código por classe
 
-- **`ApiApplication`** — Classe principal, anotada com `@SpringBootApplication`. Ponto de entrada da aplicação (`main`), que sobe o servidor embarcado do Spring Boot.
-
-- **`PecaController`** — Expõe o CRUD de peças em `/api/pecas`. Obtém a instância única de `PecaRepository` via `getInstance()` e delega cada operação para o repositório. Valida o corpo da requisição com `@Valid` em `POST`/`PUT`; Retorna `ResponseEntity` com o status HTTP apropriado (`201` na criação, `200` em busca/atualização, `204` na remoção).
-
-- **`ServicoController`** — Expõe o CRUD de serviços em `/api/servicos`. Mesmo padrão do `PecaController`: obtém `ServicoRepository.getInstance()` no construtor, valida com `@Valid`, e devolve `ResponseEntity` com o status correto.
-
-- **`PecaRepository`** — Implementa o padrão **Singleton** (construtor privado + `getInstance()` estático) e mantém uma `List<Peca>` em memória, além de um contador `AtomicLong contadorId` usado para gerar códigos. Métodos:
-  - `salvar(Peca)`: **sobrescreve `codigoSKU`** com o próximo valor do contador (`contadorId.incrementAndGet()`) e **preenche `dataCadastro` e `dataAtualizacao`** com `LocalDateTime.now()`, ignorando qualquer valor recebido no corpo da requisição; adiciona a peça à lista e a retorna.
-  - `listarTodas()`: retorna a lista completa.
-  - `buscarPorId(long)`: percorre a lista procurando `codigoSKU` igual; retorna `null` se não achar (o `null` é tratado pelo controller, que lança a exceção de 404).
-  - `atualizar(long, Peca)`: busca a peça existente e sobrescreve todos os campos (exceto `codigoSKU` e `dataCadastro`, que nunca são alterados) com os valores recebidos; **`dataAtualizacao` é sempre gerada com `LocalDateTime.now()`**, não copiada do corpo da requisição; retorna `null` se o código não existir.
-  - `deletar(long)`: busca e remove a peça da lista; retorna `boolean` indicando sucesso.
-
-- **`ServicoRepository`** — Mesmo padrão **Singleton** aplicado a `List<Servico>`, com seu próprio `AtomicLong contadorId`. Métodos equivalentes: `salvar` (gera `codigoServico`, `dataCriacao` e `dataAtualizacao` automaticamente), `getServicos` (lista todos), `buscarPorID`, `atualizar` (sobrescreve `nomeServico`, `custoTabelado`, `descricaoServico` e `tempoEstimadoMinutos`, e gera `dataAtualizacao` com `LocalDateTime.now()`), `deletar`.
-
-- **`CategoriaPeca`** — Enum simples com as categorias de peças suportadas.
-
-- **`Peca`** / **`Servico`** — Classes de modelo (POJOs) com atributos privados, construtor vazio, getters/setters e anotações de Bean Validation (`@NotBlank`, `@NotNull`, `@Positive`, `@PositiveOrZero`) nos campos obrigatórios. São usadas tanto para representar os dados internamente quanto como corpo de requisição/resposta JSON nos controllers (não há DTOs separados).
-
-- **`ApiApplicationTests`** — Teste de contexto padrão gerado pelo Spring Boot (`@SpringBootTest`), apenas garante que o contexto da aplicação sobe sem erros (`contextLoads`).
+- **`ApiApplication`** — Classe principal (`@SpringBootApplication`).
+- **`ConexaoFactory`** — Lê `db.url`, `db.username` e `db.password` do `application.properties` e devolve conexões JDBC com `DriverManager`.
+- **`Repository<T, ID>`** — Interface genérica do CRUD: `save`, `findById` (`Optional`), `findAll`, `update`, `deleteById`, `existsById`.
+- **`PecaRepository`, `ServicoRepository`, `OrdemServicoRepository`, `PedidoPecasRepository`** — Implementam `Repository<T, Long>` com SQL manual. Os dois últimos tratam a tabela associativa (serviços da OS / itens do pedido) em transação.
+- **`*ResultSetMapper`** — Convertem a linha atual de um `ResultSet` em `Peca`, `Servico`, `OrdemServico`, `PedidoPecas` e `ItemPedido`.
+- **`PecaMapper`, `ServicoMapper`, `OrdemServicoMapper`, `PedidoPecasMapper`** — Convertem DTO <-> modelo (a validação com Bean Validation fica nos DTOs de requisição).
+- **`PecaService`, `ServicoService`, `OrdemServicoService`, `PedidoPecasService`** — Regras de negócio; usam os repositórios e lançam as exceções customizadas.
+- **Controllers** — Chamam apenas os Services e traduzem as exceções em status HTTP com `try/catch`.
+- **`OrdemServico`** — Criada pelo padrão **Builder**; o Builder também aceita código, status e datas para reconstruir uma OS lida do banco.
+- **`ApiApplicationTests`** — Teste de contexto (`contextLoads`); não abre conexão, então passa mesmo sem o MySQL no ar.
 
 ---
 
 ## Como executar o projeto
 
-Pré-requisitos: **JDK 21** (o Gradle wrapper baixa o Gradle 9.5.1 automaticamente).
+Pré-requisitos: **JDK 21** (o Gradle wrapper baixa o Gradle 9.5.1 automaticamente) e **MySQL 8+** rodando.
+
+1. Crie o banco e as tabelas:
+
+```bash
+mysql -u root -p < database/mecaniqa.sql
+```
+
+2. Ajuste, se necessário, usuário/senha/URL em [`application.properties`](src/main/resources/application.properties) (ou use as variáveis de ambiente `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`). O padrão é `root`/`root` em `localhost:3306`.
+
+3. Suba a API.
 
 No Windows (PowerShell):
 
@@ -303,13 +312,13 @@ No Linux/Mac ou Git Bash:
 ./gradlew bootRun
 ```
 
-A aplicação sobe por padrão em `http://localhost:8080` (porta padrão do Spring Boot, não customizada em `application.properties`).
+A aplicação sobe por padrão em `http://localhost:8080`.
 
 ---
 
 ## Como testar as rotas
 
-Como não há dados pré-carregados nem banco persistente, é necessário cadastrar peças/serviços via `POST` antes de consultá-los. Exemplos com `curl`:
+O script SQL já insere algumas peças e serviços iniciais; novos registros podem ser cadastrados via `POST`. Exemplos com `curl`:
 
 ```bash
 # Criar uma peça (codigoSKU e datas são gerados pelo servidor, não precisam ser enviados)
@@ -350,9 +359,6 @@ Rodar os testes automatizados (smoke test do contexto Spring):
 
 ## Limitações conhecidas / pontos de atenção
 
-Estes pontos refletem o estado atual do código e são úteis para quem for evoluir o projeto:
-
-- **Sem persistência real**: os dados existem apenas em memória (`ArrayList` dentro dos repositórios Singleton) e são perdidos a cada reinicialização da aplicação, mesmo com H2 e Spring Data JPA nas dependências. Os contadores de geração de código (`AtomicLong`) também são reiniciados junto.
-- **Sem camada de serviço (`@Service`)**: a regra de negócio (hoje mínima) está toda dentro dos repositórios; os controllers chamam os repositórios diretamente.
-- **`Peca` está anotada como `@Entity` mas não é gerenciada pelo JPA** (autoconfiguração desativada) **e não possui `@Id`**, o que impediria o mapeamento caso o JPA fosse reativado sem ajustes.
-- **`MeuPrimeiroApp.java`** é uma classe de exercício isolada, sem relação com os endpoints da API — mantê-la ou removê-la não afeta o funcionamento do serviço REST.
+- **Sem pool de conexões**: `ConexaoFactory` abre uma conexão nova por operação (suficiente para esta etapa acadêmica).
+- **Valores monetários**: ficam em `DECIMAL(10,2)` no banco, mas os models usam `double`.
+- **Atualização de pedido/OS**: o `update` regrava a lista de itens/serviços (apaga e reinsere) dentro de uma transação.

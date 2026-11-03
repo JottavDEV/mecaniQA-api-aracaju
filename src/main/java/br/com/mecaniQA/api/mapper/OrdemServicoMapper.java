@@ -1,42 +1,19 @@
 package br.com.mecaniQA.api.mapper;
 
-import br.com.mecaniQA.api.dto.OrdemServicoRequestDTO;
 import br.com.mecaniQA.api.dto.OrdemServicoResponseDTO;
 import br.com.mecaniQA.api.dto.ServicoResumoDTO;
 import br.com.mecaniQA.api.model.OrdemServico;
 import br.com.mecaniQA.api.model.Servico;
-import br.com.mecaniQA.api.repository.ServicoRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Responsável por converter o mundo "de fora" (DTOs, JSON) no mundo
-// "de dentro" (entidades de modelo) e vice-versa.
+// Converte a entidade de modelo no DTO de resposta devolvido ao cliente.
+// (A conversão ResultSet -> modelo fica em OrdemServicoResultSetMapper.)
 public class OrdemServicoMapper {
 
     private OrdemServicoMapper() {
         // classe utilitária: não deve ser instanciada
-    }
-
-    // ===================== DTO -> MODEL =====================
-    public static OrdemServico paraModel(OrdemServicoRequestDTO dto) {
-        OrdemServico.Builder builder = OrdemServico.builder()
-                .comCliente(dto.getClienteNome())
-                .comVeiculo(dto.getVeiculo())
-                .comDescricaoProblema(dto.getDescricaoProblema());
-
-        ServicoRepository servicoRepository = ServicoRepository.getInstance();
-
-        for (Long codigoServico : dto.getCodigosServicos()) {
-            Servico servico = servicoRepository.buscarPorID(codigoServico);
-            if (servico == null) {
-                throw new IllegalArgumentException(
-                        "Serviço com código " + codigoServico + " não encontrado");
-            }
-            builder.adicionarServico(servico);
-        }
-
-        return builder.build();
     }
 
     // ===================== MODEL -> DTO =====================
