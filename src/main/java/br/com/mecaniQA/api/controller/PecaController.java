@@ -1,70 +1,100 @@
 package br.com.mecaniQA.api.controller;
 
+import br.com.mecaniQA.api.exception.DadosInvalidosException;
+import br.com.mecaniQA.api.exception.ErroBancoDadosException;
+import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
+import br.com.mecaniQA.api.dto.PecaRequestDTO;
+import br.com.mecaniQA.api.dto.PecaResponseDTO;
+import br.com.mecaniQA.api.mapper.PecaMapper;
 import br.com.mecaniQA.api.model.Peca;
-import br.com.mecaniQA.api.repository.PecaRepository;
+import br.com.mecaniQA.api.service.PecaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
-// ==================== Rotas CRUD ==================
-// ===================== CREATE =====================
-
+// O Controller só recebe a requisição, chama o Service e devolve o
+// status HTTP. Os erros são tratados aqui, manualmente, com try/catch.
 @RestController
 @RequestMapping("/api/pecas")
 public class PecaController {
 
-    private final PecaRepository repository = PecaRepository.getInstance();
+    private final PecaService service;
 
-    // ==================== CREATE ====================
+    public PecaController(PecaService service) {
+        this.service = service;
+    }
+
+    // ===================== CREATE =====================
     @PostMapping
-    public ResponseEntity<Peca> salvar(@Valid @RequestBody Peca peca) {
-        Peca pecaSalva = repository.salvar(peca);
-        return ResponseEntity.status(HttpStatus.CREATED).body(pecaSalva);
+    public ResponseEntity<?> salvar(@Valid @RequestBody PecaRequestDTO dto) {
+        try {
+            Peca pecaSalva = service.salvar(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(PecaMapper.paraResponseDTO(pecaSalva));
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     // ===================== READ =====================
-
     @GetMapping
-    public List<Peca> listarTodas() {
-        return repository.listarTodas();
+    public ResponseEntity<?> listarTodas() {
+        try {
+            List<PecaResponseDTO> resposta = new ArrayList<>();
+            for (Peca peca : service.listarTodas()) {
+                resposta.add(PecaMapper.paraResponseDTO(peca));
+            }
+            return ResponseEntity.ok(resposta);
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     // ===================== READ por ID =====================
-
     @GetMapping("/{codigoSKU}")
-    public ResponseEntity<Peca> buscarPorId(@PathVariable long codigoSKU) {
-        Peca peca = repository.buscarPorId(codigoSKU);
-        if (peca == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> buscarPorId(@PathVariable long codigoSKU) {
+        try {
+            return ResponseEntity.ok(PecaMapper.paraResponseDTO(service.buscarPorId(codigoSKU)));
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.ok(peca);
     }
 
     // ===================== UPDATE =====================
-
     @PutMapping("/{codigoSKU}")
-    public ResponseEntity<Peca> atualizar(
+    public ResponseEntity<?> atualizar(
             @PathVariable long codigoSKU,
-            @Valid @RequestBody Peca peca) {
-
-        Peca pecaAtualizada = repository.atualizar(codigoSKU, peca);
-        if (pecaAtualizada == null) {
-            return ResponseEntity.notFound().build();
+            @Valid @RequestBody PecaRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(PecaMapper.paraResponseDTO(service.atualizar(codigoSKU, dto)));
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.ok(pecaAtualizada);
     }
 
     // ===================== DELETE =====================
-
     @DeleteMapping("/{codigoSKU}")
-    public ResponseEntity<Void> deletar(@PathVariable long codigoSKU) {
-        boolean removida = repository.deletar(codigoSKU);
-        if (!removida) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> deletar(@PathVariable long codigoSKU) {
+        try {
+            service.deletar(codigoSKU);
+            return ResponseEntity.noContent().build();
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.noContent().build();
     }
 }

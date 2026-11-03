@@ -23,6 +23,9 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // Driver JDBC do MySQL (a persistência é feita com java.sql, sem ORM)
+    runtimeOnly("com.mysql:mysql-connector-j")
+
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

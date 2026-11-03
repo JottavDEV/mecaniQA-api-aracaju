@@ -1,80 +1,100 @@
 package br.com.mecaniQA.api.controller;
 
+import br.com.mecaniQA.api.exception.DadosInvalidosException;
+import br.com.mecaniQA.api.exception.ErroBancoDadosException;
+import br.com.mecaniQA.api.exception.RecursoNaoEncontradoException;
+import br.com.mecaniQA.api.dto.ServicoRequestDTO;
+import br.com.mecaniQA.api.dto.ServicoResponseDTO;
+import br.com.mecaniQA.api.mapper.ServicoMapper;
 import br.com.mecaniQA.api.model.Servico;
-import br.com.mecaniQA.api.repository.ServicoRepository;
+import br.com.mecaniQA.api.service.ServicoService;
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
-    // ==================== Rotas CRUD ==================
-    // ===================== READ =====================
+// O Controller só recebe a requisição, chama o Service e devolve o
+// status HTTP. Os erros são tratados aqui, manualmente, com try/catch.
 @RestController
 @RequestMapping("/api/servicos")
 public class ServicoController {
 
-    private final ServicoRepository repository;
+    private final ServicoService service;
 
-    public ServicoController() {
-        this.repository = ServicoRepository.getInstance();
+    public ServicoController(ServicoService service) {
+        this.service = service;
     }
 
-
     // ===================== CREATE =====================
-
     @PostMapping
-    public ResponseEntity<Servico> criar(@Valid @RequestBody Servico servico) {
-        Servico servicoSalvo = repository.salvar(servico);
-        return ResponseEntity.status(HttpStatus.CREATED).body(servicoSalvo);
+    public ResponseEntity<?> criar(@Valid @RequestBody ServicoRequestDTO dto) {
+        try {
+            Servico servicoSalvo = service.salvar(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ServicoMapper.paraResponseDTO(servicoSalvo));
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     // ===================== READ - TODOS =====================
-
     @GetMapping
-    public List<Servico> listarTodos() {
-        return repository.listarTodos();
+    public ResponseEntity<?> listarTodos() {
+        try {
+            List<ServicoResponseDTO> resposta = new ArrayList<>();
+            for (Servico servico : service.listarTodos()) {
+                resposta.add(ServicoMapper.paraResponseDTO(servico));
+            }
+            return ResponseEntity.ok(resposta);
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     // ===================== READ - POR ID =====================
-
     @GetMapping("/{codigoServico}")
-    public ResponseEntity<Servico> buscarPorId(
-            @PathVariable long codigoServico) {
-
-        Servico servico = repository.buscarPorID(codigoServico);
-        if (servico == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> buscarPorId(@PathVariable long codigoServico) {
+        try {
+            return ResponseEntity.ok(ServicoMapper.paraResponseDTO(service.buscarPorId(codigoServico)));
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.ok(servico);
     }
 
     // ===================== UPDATE =====================
-
     @PutMapping("/{codigoServico}")
-    public ResponseEntity<Servico> atualizar(
+    public ResponseEntity<?> atualizar(
             @PathVariable long codigoServico,
-            @Valid @RequestBody Servico servico) {
-
-        Servico servicoAtualizado = repository.atualizar(codigoServico, servico);
-        if (servicoAtualizado == null) {
-            return ResponseEntity.notFound().build();
+            @Valid @RequestBody ServicoRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(ServicoMapper.paraResponseDTO(service.atualizar(codigoServico, dto)));
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.ok(servicoAtualizado);
     }
 
     // ===================== DELETE =====================
-
     @DeleteMapping("/{codigoServico}")
-    public ResponseEntity<Void> deletar(
-            @PathVariable long codigoServico) {
-
-        boolean removido = repository.deletar(codigoServico);
-        if (!removido) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> deletar(@PathVariable long codigoServico) {
+        try {
+            service.deletar(codigoServico);
+            return ResponseEntity.noContent().build();
+        } catch (RecursoNaoEncontradoException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (DadosInvalidosException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ErroBancoDadosException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        return ResponseEntity.noContent().build();
     }
 }

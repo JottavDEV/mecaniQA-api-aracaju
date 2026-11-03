@@ -1,43 +1,19 @@
 package br.com.mecaniQA.api.mapper;
 
-import br.com.mecaniQA.api.dto.ItemPedidoRequestDTO;
 import br.com.mecaniQA.api.dto.ItemPedidoResponseDTO;
-import br.com.mecaniQA.api.dto.PedidoPecasRequestDTO;
 import br.com.mecaniQA.api.dto.PedidoPecasResponseDTO;
 import br.com.mecaniQA.api.model.ItemPedido;
-import br.com.mecaniQA.api.model.Peca;
 import br.com.mecaniQA.api.model.PedidoPecas;
-import br.com.mecaniQA.api.repository.PecaRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+// Converte a entidade de modelo no DTO de resposta devolvido ao cliente.
+// (A conversão ResultSet -> modelo fica em PedidoPecasResultSetMapper.)
 public class PedidoPecasMapper {
 
     private PedidoPecasMapper() {
         // classe utilitária: não deve ser instanciada
-    }
-
-    // ===================== DTO -> MODEL (item avulso) =====================
-    public static ItemPedido paraModel(ItemPedidoRequestDTO dto) {
-        PecaRepository pecaRepository = PecaRepository.getInstance();
-        Peca peca = pecaRepository.buscarPorId(dto.getCodigoSKU());
-        if (peca == null) {
-            throw new IllegalArgumentException(
-                    "Peça com código SKU " + dto.getCodigoSKU() + " não encontrada");
-        }
-        return new ItemPedido(peca, dto.getQuantidade());
-    }
-
-    // ===================== DTO -> MODEL (pedido completo) =====================
-    public static PedidoPecas paraModel(PedidoPecasRequestDTO dto) {
-        PedidoPecas pedido = new PedidoPecas();
-
-        for (ItemPedidoRequestDTO itemDTO : dto.getItens()) {
-            pedido.adicionarItem(paraModel(itemDTO));
-        }
-
-        return pedido;
     }
 
     // ===================== MODEL -> DTO =====================

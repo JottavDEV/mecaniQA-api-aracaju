@@ -23,13 +23,18 @@ public class OrdemServico {
     // através de OrdemServico.builder()...build(). O construtor recebe
     // o próprio Builder e "copia" os valores acumulados nele.
     private OrdemServico(Builder builder) {
+        LocalDateTime agora = LocalDateTime.now();
+        this.codigoOS = builder.codigoOS;
         this.clienteNome = builder.clienteNome;
         this.veiculo = builder.veiculo;
         this.descricaoProblema = builder.descricaoProblema;
         this.servicos = builder.servicos;
-        this.status = StatusOS.ABERTO;
-        this.dataAbertura = LocalDateTime.now();
-        this.dataAtualizacao = LocalDateTime.now();
+        // Uma OS nova nasce ABERTO e com datas de "agora". Os valores só
+        // vêm preenchidos no Builder quando o Mapper reconstrói uma OS
+        // que já existe no banco.
+        this.status = builder.status != null ? builder.status : StatusOS.ABERTO;
+        this.dataAbertura = builder.dataAbertura != null ? builder.dataAbertura : agora;
+        this.dataAtualizacao = builder.dataAtualizacao != null ? builder.dataAtualizacao : agora;
     }
 
     // ===================== PONTO DE ENTRADA DO BUILDER =====================
@@ -101,13 +106,38 @@ public class OrdemServico {
     // encadeamento: builder().comCliente(...).comVeiculo(...).build()
     public static class Builder {
 
+        private long codigoOS;
         private String clienteNome;
         private String veiculo;
         private String descricaoProblema;
         private List<Servico> servicos = new ArrayList<>();
+        private StatusOS status;
+        private LocalDateTime dataAbertura;
+        private LocalDateTime dataAtualizacao;
 
         private Builder() {
             // privado: só se cria um Builder através de OrdemServico.builder()
+        }
+
+        // Usados pelo Mapper de ResultSet para reconstruir uma OS já salva.
+        public Builder comCodigoOS(long codigoOS) {
+            this.codigoOS = codigoOS;
+            return this;
+        }
+
+        public Builder comStatus(StatusOS status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder comDataAbertura(LocalDateTime dataAbertura) {
+            this.dataAbertura = dataAbertura;
+            return this;
+        }
+
+        public Builder comDataAtualizacao(LocalDateTime dataAtualizacao) {
+            this.dataAtualizacao = dataAtualizacao;
+            return this;
         }
 
         public Builder comCliente(String clienteNome) {
