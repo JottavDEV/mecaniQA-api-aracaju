@@ -27,10 +27,14 @@ A mecaniQA é uma oficina mecânica fictícia. A API tem como objetivo gerenciar
 - [Modelos de dados (Entidades)](#modelos-de-dados-entidades)
   - [Peca](#peca)
   - [Servico](#servico)
-  - [Enum CategoriaPeca](#enum-categoriapeca)
+  - [OrdemServico](#ordemservico)
+  - [PedidoPecas e ItemPedido](#pedidopecas-e-itempedido)
+  - [Enums](#enums)
 - [Rotas da API (Endpoints)](#rotas-da-api-endpoints)
   - [`/api/pecas`](#apipecas)
   - [`/api/servicos`](#apiservicos)
+  - [`/api/ordens-servico`](#apiordens-servico)
+  - [`/api/pedidos-pecas`](#apipedidos-pecas)
 - [Detalhamento do código por classe](#detalhamento-do-código-por-classe)
 - [Como executar o projeto](#como-executar-o-projeto)
 - [Como testar as rotas](#como-testar-as-rotas)
@@ -70,7 +74,7 @@ src/main/java/br/com/mecaniQA/api
 ├── mapper
 │   ├── ResultSetMapper.java             # Contrato dos mappers de ResultSet
 │   ├── *ResultSetMapper.java            # ResultSet -> objeto de modelo
-│   └── *Mapper.java                     # Modelo -> DTO de resposta
+│   └── *Mapper.java                     # DTO <-> modelo
 ├── exception                            # Exceções customizadas
 ├── dto, enums, model
 src/main/resources
@@ -132,76 +136,74 @@ As anotações de Bean Validation (`@NotBlank`, `@NotNull`, `@Positive`, ...) no
 
 ## Modelos de dados (Entidades)
 
+As classes de `model` são POJOs simples (atributos privados, construtor vazio, getters e setters). Não há anotações de JPA: a persistência é feita pelos repositórios JDBC. A validação com Bean Validation fica nos DTOs de requisição.
+
 ### Peca
 
-Classe: [`br.com.mecaniQA.api.model.Peca`](src/main/java/br/com/mecaniQA/api/model/Peca.java)
+Classe: `br.com.mecaniQA.api.model.Peca` (tabela `peca`). Representa uma peça do estoque da oficina.
 
-Representa uma peça do estoque da oficina. Está anotada com `@Entity` e `@Table(name = "pecas")`, mas — como explicado acima — essa anotação não tem efeito prático hoje, pois o JPA está desligado. Também não possui nenhum campo marcado com `@Id`, então, caso o JPA fosse reativado como está, o mapeamento falharia por falta de chave primária.
-
-| Campo | Tipo | Validação | Descrição |
+| Campo | Tipo | Validação (no `PecaRequestDTO`) | Descrição |
 |---|---|---|---|
-| `codigoSKU` | `long` | — | Código identificador da peça (usado como "id" nas rotas). **Gerado automaticamente pelo `PecaRepository`** a cada `POST`; qualquer valor enviado pelo cliente no corpo da requisição é ignorado e sobrescrito. |
-| `nome` | `String` | `@NotBlank` | Nome da peça. Obrigatório. |
-| `codigobarras` | `long` | `@Positive` | Código de barras da peça. Deve ser maior que zero. |
-| `fornecedor` | `String` | `@NotBlank` | Nome do fornecedor. Obrigatório. |
-| `quantidade` | `int` | `@PositiveOrZero` | Quantidade em estoque. Não pode ser negativa. |
-| `precoCusto` | `double` | `@PositiveOrZero` | Preço de custo (compra). Não pode ser negativo. |
-| `precoVenda` | `double` | `@PositiveOrZero` | Preço de venda. Não pode ser negativo. |
-| `dataCadastro` | `LocalDateTime` | — | Data/hora de cadastro da peça. **Gerada automaticamente** (`LocalDateTime.now()`) no `salvar()`; valor enviado pelo cliente é ignorado. |
-| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. **Gerada automaticamente** no `salvar()` e a cada `atualizar()`; valor enviado pelo cliente é ignorado. |
+| `codigoSKU` | `long` | — | Identificador da peça. Gerado pelo banco (`AUTO_INCREMENT`); qualquer valor enviado no corpo é ignorado. |
+| `nome` | `String` | `@NotBlank` | Nome da peça. |
+| `codigobarras` | `long` | `@Positive` | Código de barras. Deve ser maior que zero. |
+| `fornecedor` | `String` | `@NotBlank` | Nome do fornecedor. |
+| `quantidade` | `int` | `@PositiveOrZero` | Quantidade em estoque. |
+| `precoCusto` | `double` | `@PositiveOrZero` | Preço de custo. |
+| `precoVenda` | `double` | `@PositiveOrZero` | Preço de venda. |
 | `tamanho` | `String` | — | Tamanho da peça. |
 | `cor` | `String` | — | Cor da peça. |
-| `categoriaPeca` | `CategoriaPeca` (enum) | `@NotNull` | Categoria da peça. Obrigatória; persistida/serializada como texto (`EnumType.STRING`). |
-
-Possui construtor vazio e getters/setters para todos os campos.
+| `categoriaPeca` | `CategoriaPeca` | `@NotNull` | Categoria da peça. |
+| `dataCadastro` | `LocalDateTime` | — | Gerada pelo servidor ao salvar. |
+| `dataAtualizacao` | `LocalDateTime` | — | Gerada pelo servidor ao salvar e a cada atualização. |
 
 ### Servico
 
-Classe: [`br.com.mecaniQA.api.model.Servico`](src/main/java/br/com/mecaniQA/api/model/Servico.java)
+Classe: `br.com.mecaniQA.api.model.Servico` (tabela `servico`). Representa um serviço (mão de obra) oferecido pela oficina.
 
-Representa um serviço/mão de obra oferecido pela oficina (ex.: manutenção preventiva). Diferente de `Peca`, **não é uma entidade JPA** (não possui `@Entity`) — é um POJO simples.
-
-| Campo | Tipo | Validação | Descrição |
+| Campo | Tipo | Validação (no `ServicoRequestDTO`) | Descrição |
 |---|---|---|---|
-| `codigoServico` | `long` | — | Código identificador do serviço (usado como "id" nas rotas). **Gerado automaticamente pelo `ServicoRepository`** a cada `POST`; qualquer valor enviado pelo cliente no corpo da requisição é ignorado e sobrescrito. |
-| `nomeServico` | `String` | `@NotBlank` | Nome do serviço (ex.: "Manutenção Preventiva"). Obrigatório. |
-| `descricaoServico` | `String` | `@NotBlank` | Descrição detalhada do serviço. Obrigatória. |
-| `tempoEstimadoMinutos` | `int` | `@Positive` | Tempo estimado de execução, em minutos. Deve ser maior que zero. |
-| `custoTabelado` | `double` | `@PositiveOrZero` | Custo tabelado do serviço. Não pode ser negativo. |
-| `dataCriacao` | `LocalDateTime` | — | Data/hora de criação do registro. **Gerada automaticamente** (`LocalDateTime.now()`) no `salvar()`; valor enviado pelo cliente é ignorado. |
-| `dataAtualizacao` | `LocalDateTime` | — | Data/hora da última atualização. **Gerada automaticamente** no `salvar()` e a cada `atualizar()`; valor enviado pelo cliente é ignorado. |
+| `codigoServico` | `long` | — | Identificador. Gerado pelo banco; valor enviado no corpo é ignorado. |
+| `nomeServico` | `String` | `@NotBlank` | Nome do serviço. |
+| `descricaoServico` | `String` | `@NotBlank` | Descrição detalhada. |
+| `tempoEstimadoMinutos` | `int` | `@Positive` | Tempo estimado, em minutos. |
+| `custoTabelado` | `double` | `@PositiveOrZero` | Custo tabelado. |
+| `dataCriacao` | `LocalDateTime` | — | Gerada pelo servidor. |
+| `dataAtualizacao` | `LocalDateTime` | — | Gerada pelo servidor. |
 
-Possui construtor vazio e getters/setters para todos os campos.
+### OrdemServico
 
-### Enum CategoriaPeca
+Classe: `br.com.mecaniQA.api.model.OrdemServico` (tabelas `ordem_servico` e `ordem_servico_servico`). Criada pelo padrão **Builder**. Tem cliente, veículo, descrição do problema, lista de serviços, `status` (começa em `ABERTO`) e datas. O `valorTotal` é a soma do `custoTabelado` dos serviços.
 
-Classe: [`br.com.mecaniQA.api.enums.CategoriaPeca`](src/main/java/br/com/mecaniQA/api/enums/CategoriaPeca.java)
+### PedidoPecas e ItemPedido
 
-Define as categorias possíveis para uma `Peca`:
+Classes: `PedidoPecas` (tabela `pedido_pecas`) e `ItemPedido` (tabela `item_pedido`). `ItemPedido` é a entidade associativa entre pedido e peça e guarda a `quantidade`. O pedido começa em `ORCANDO`, e o `valorTotal` é a soma dos subtotais (preço de venda da peça x quantidade).
 
-```java
-MOTOR, SUSPENSAO, FREIOS, ELETRICA, ACESSORIOS
-```
+### Enums
+
+- `CategoriaPeca`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA`, `ACESSORIOS`
+- `StatusOS`: `ABERTO`, `PENDENTE_PAGAMENTO`, `PAGO`, `EM_EXECUCAO`, `EXECUTADO`
+- `StatusPedido`: `ORCANDO`, `PENDENTE_PAGAMENTO`, `PAGO_FATURADO`, `ENTREGUE`
 
 ---
 
 ## Rotas da API (Endpoints)
 
-Todas as rotas recebem/retornam `JSON`. Não há autenticação nem versionamento de API configurados. Todas vivem sob o prefixo `/api`, seguindo o padrão RESTful.
+Todas as rotas recebem e devolvem JSON, sob o prefixo `/api`. Não há autenticação. Nas respostas de erro tratadas pela API (404, 400 de regra de negócio e 500), o corpo é o texto da mensagem da exceção, por exemplo `Peça com código SKU 999 não encontrada`. O 400 de campo inválido (`@Valid`) é devolvido pelo próprio Spring.
 
 ### `/api/pecas`
 
-Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/PecaController.java)
+Controller: `PecaController`
 
-| Método | Rota | Descrição | Corpo da requisição | Resposta de sucesso | Erros possíveis |
-|---|---|---|---|---|---|
-| `POST` | `/api/pecas` | Cadastra uma nova peça. O `codigoSKU` é gerado pelo servidor. | JSON de `Peca` (sem precisar informar `codigoSKU`) | `201 Created` + a peça criada (com `codigoSKU` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
-| `GET` | `/api/pecas` | Lista todas as peças cadastradas. | — | `200 OK` + lista (`array`) de `Peca` | — |
-| `GET` | `/api/pecas/{codigoSKU}` | Busca uma peça pelo código SKU. | — | `200 OK` + a peça encontrada | `404 Not Found` se o código não existir |
-| `PUT` | `/api/pecas/{codigoSKU}` | Atualiza os dados de uma peça existente. | JSON de `Peca` com os novos valores | `200 OK` + a peça atualizada | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
-| `DELETE` | `/api/pecas/{codigoSKU}` | Remove uma peça pelo código SKU. | — | `204 No Content` | `404 Not Found` se o código não existir |
+| Método | Rota | Descrição | Sucesso | Erros possíveis |
+|---|---|---|---|---|
+| POST | `/api/pecas` | Cadastra uma peça (`PecaRequestDTO`). | `201` + peça criada | `400` dados inválidos |
+| GET | `/api/pecas` | Lista todas as peças. | `200` + lista | `500` erro de banco |
+| GET | `/api/pecas/{codigoSKU}` | Busca uma peça. | `200` | `404` não existe |
+| PUT | `/api/pecas/{codigoSKU}` | Atualiza uma peça. | `200` | `400` inválido; `404` não existe |
+| DELETE | `/api/pecas/{codigoSKU}` | Remove uma peça. | `204` | `404` não existe; `400` peça usada em um pedido |
 
-**Exemplo de corpo para `POST /api/pecas`:**
+Exemplo de corpo para `POST /api/pecas`:
 
 ```json
 {
@@ -217,46 +219,19 @@ Controller: [`PecaController`](src/main/java/br/com/mecaniQA/api/controller/Peca
 }
 ```
 
-> O campo `categoriaPeca` deve ser um dos valores do enum `CategoriaPeca`: `MOTOR`, `SUSPENSAO`, `FREIOS`, `ELETRICA` ou `ACESSORIOS`. Não é necessário (nem tem efeito) enviar `codigoSKU`, `dataCadastro` ou `dataAtualizacao` — todos são sempre gerados pelo servidor.
-
-**Exemplo de erro `404 Not Found` (`GET /api/pecas/999`, código inexistente):**
-
-```json
-{
-  "status": 404,
-  "erro": "Recurso não encontrado",
-  "mensagem": "Peça com código SKU 999 não encontrada",
-  "timestamp": "2026-08-16T21:40:00"
-}
-```
-
-**Exemplo de erro `400 Bad Request` (`POST /api/pecas` sem `nome` e com `categoriaPeca` ausente):**
-
-```json
-{
-  "status": 400,
-  "erro": "Dados inválidos",
-  "campos": {
-    "nome": "O nome da peça é obrigatório",
-    "categoriaPeca": "A categoria da peça é obrigatória"
-  },
-  "timestamp": "2026-08-16T21:40:00"
-}
-```
-
 ### `/api/servicos`
 
-Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/ServicoController.java)
+Controller: `ServicoController`
 
-| Método | Rota | Descrição | Corpo da requisição | Resposta de sucesso | Erros possíveis |
-|---|---|---|---|---|---|
-| `POST` | `/api/servicos` | Cadastra um novo serviço. O `codigoServico` é gerado pelo servidor. | JSON de `Servico` (sem precisar informar `codigoServico`) | `201 Created` + o serviço criado (com `codigoServico` gerado) | `400 Bad Request` se algum campo obrigatório for inválido |
-| `GET` | `/api/servicos` | Lista todos os serviços cadastrados. | — | `200 OK` + lista (`array`) de `Servico` | — |
-| `GET` | `/api/servicos/{codigoServico}` | Busca um serviço pelo código. | — | `200 OK` + o serviço encontrado | `404 Not Found` se o código não existir |
-| `PUT` | `/api/servicos/{codigoServico}` | Atualiza os dados de um serviço existente. | JSON de `Servico` com os novos valores | `200 OK` + o serviço atualizado | `400 Bad Request` se inválido; `404 Not Found` se o código não existir |
-| `DELETE` | `/api/servicos/{codigoServico}` | Remove um serviço pelo código. | — | `204 No Content` | `404 Not Found` se o código não existir |
+| Método | Rota | Descrição | Sucesso | Erros possíveis |
+|---|---|---|---|---|
+| POST | `/api/servicos` | Cadastra um serviço (`ServicoRequestDTO`). | `201` + serviço criado | `400` dados inválidos |
+| GET | `/api/servicos` | Lista todos os serviços. | `200` + lista | `500` erro de banco |
+| GET | `/api/servicos/{codigoServico}` | Busca um serviço. | `200` | `404` não existe |
+| PUT | `/api/servicos/{codigoServico}` | Atualiza um serviço. | `200` | `400` inválido; `404` não existe |
+| DELETE | `/api/servicos/{codigoServico}` | Remove um serviço. | `204` | `404` não existe; `400` serviço usado em uma OS |
 
-**Exemplo de corpo para `POST /api/servicos`:**
+Exemplo de corpo para `POST /api/servicos`:
 
 ```json
 {
@@ -267,7 +242,51 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 }
 ```
 
-> Não é necessário (nem tem efeito) enviar `codigoServico`, `dataCriacao` ou `dataAtualizacao` — todos são sempre gerados pelo servidor.
+### `/api/ordens-servico`
+
+Controller: `OrdemServicoController`
+
+| Método | Rota | Descrição | Sucesso | Erros possíveis |
+|---|---|---|---|---|
+| POST | `/api/ordens-servico` | Abre uma OS (`OrdemServicoRequestDTO`). | `201` + OS criada | `400` dados inválidos ou serviço informado não existe |
+| GET | `/api/ordens-servico` | Lista as OS. | `200` + lista | `500` erro de banco |
+| GET | `/api/ordens-servico/{codigoOS}` | Busca uma OS. | `200` | `404` não existe |
+| PATCH | `/api/ordens-servico/{codigoOS}/status` | Muda o status da OS. | `200` | `404` não existe; `400` status inválido |
+| DELETE | `/api/ordens-servico/{codigoOS}` | Remove uma OS. | `204` | `404` não existe |
+
+Exemplos de corpo:
+
+```json
+{ "clienteNome": "Maria", "veiculo": "Gol 2018", "descricaoProblema": "Barulho no freio", "codigosServicos": [1, 2] }
+```
+```json
+{ "status": "EM_EXECUCAO" }
+```
+
+### `/api/pedidos-pecas`
+
+Controller: `PedidoPecasController`
+
+| Método | Rota | Descrição | Sucesso | Erros possíveis |
+|---|---|---|---|---|
+| POST | `/api/pedidos-pecas` | Cria um pedido com itens (`PedidoPecasRequestDTO`). | `201` + pedido criado | `400` dados inválidos ou peça informada não existe |
+| GET | `/api/pedidos-pecas` | Lista os pedidos. | `200` + lista | `500` erro de banco |
+| GET | `/api/pedidos-pecas/{codigoPedido}` | Busca um pedido. | `200` | `404` não existe |
+| POST | `/api/pedidos-pecas/{codigoPedido}/itens` | Adiciona um item ao pedido. | `200` + pedido atualizado | `404` pedido não existe; `400` peça inexistente ou dado inválido |
+| PATCH | `/api/pedidos-pecas/{codigoPedido}/status` | Muda o status do pedido. | `200` | `404` não existe; `400` status inválido |
+| DELETE | `/api/pedidos-pecas/{codigoPedido}` | Remove um pedido. | `204` | `404` não existe |
+
+Exemplos de corpo:
+
+```json
+{ "itens": [ { "codigoSKU": 1, "quantidade": 2 } ] }
+```
+```json
+{ "codigoSKU": 2, "quantidade": 1 }
+```
+```json
+{ "status": "PENDENTE_PAGAMENTO" }
+```
 
 ---
 
@@ -290,13 +309,24 @@ Controller: [`ServicoController`](src/main/java/br/com/mecaniQA/api/controller/S
 
 Pré-requisitos: **JDK 21** (o Gradle wrapper baixa o Gradle 9.5.1 automaticamente) e **MySQL 8+** rodando.
 
-1. Crie o banco e as tabelas:
+1. Crie o banco e as tabelas. No Linux/Mac/Git Bash:
 
 ```bash
-mysql -u root -p < database/mecaniqa.sql
+mysql --default-character-set=utf8mb4 -u root -p < database/mecaniqa.sql
 ```
 
-2. Ajuste, se necessário, usuário/senha/URL em [`application.properties`](src/main/resources/application.properties) (ou use as variáveis de ambiente `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`). O padrão é `root`/`root` em `localhost:3306`.
+No PowerShell o `<` não funciona. Entre no cliente e use `source` (o `--default-character-set=utf8mb4` evita acentos quebrados nos dados):
+
+```powershell
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" --default-character-set=utf8mb4 -u root -p
+```
+```sql
+source C:/caminho/do/projeto/database/mecaniqa.sql
+```
+
+Também dá para abrir o arquivo no MySQL Workbench e executar. O script apaga e recria as tabelas.
+
+2. Ajuste, se necessário, usuário/senha/URL com as variáveis de ambiente `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` (ou em [`application.properties`](src/main/resources/application.properties)). O padrão é `root`/`root` em `localhost:3306`. No PowerShell: `$env:DB_PASSWORD="sua_senha"` (vale só para aquele terminal).
 
 3. Suba a API.
 
